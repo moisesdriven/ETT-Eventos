@@ -153,3 +153,47 @@ Esquema `analytics` (o `ghl` solo si confirmas que se puede añadir ahí):
 3. **App de Marketplace de GHL**: confirmar que existe (client_id/secret) y con qué *scopes*. Mínimos: `saas/location.read`, `conversations.readonly`, `conversations/message.readonly`, `contacts.readonly`, `locations.readonly`, `locations/tags.readonly`, `oauth.readonly`/`oauth.write`.
 4. **Dominio público** para los webhooks de GHL detrás de Traefik.
 5. Confirmar defaults: pg-boss (en vez de Redis/BullMQ), Drizzle, esquema `analytics` para lo nuevo, atribución "último toque".
+
+---
+
+## 7. Actualización tras la respuesta del 2026-10-30
+
+### 7.1 Alcance simplificado
+- **Despliegue aislado en Contabo**: stack propio en `docker-compose` (PostgreSQL propio + web + worker detrás de Traefik). No se conecta a ninguna base existente, así que no hay riesgo sobre datos previos.
+- **Una sola subcuenta.** La configuración se reduce a variables de entorno en el servidor:
+  - `GHL_AGENCY_TOKEN` (pit- o OAuth de agencia) → solo para `wallet-transactions` (endpoint SaaS de agencia).
+  - `GHL_LOCATION_TOKEN` (pit- de la subcuenta) y `GHL_LOCATION_ID` → mensajes, contactos, tags.
+  - Los tokens nunca se guardan en el repositorio ni se pegan en el chat; si se cargan en BD, van cifrados con AES‑256‑GCM.
+- El módulo de OAuth completo (flujo de autorización de Marketplace) pasa a ser opcional; el cliente GHL abstrae el origen del token para poder activarlo después.
+
+### 7.2 Nomenclatura de las etiquetas de evento
+Las 28 etiquetas entregadas cumplen todas un mismo patrón (validado):
+
+```
+<PROGRAMA><EDICIÓN>[-EV<N>]-<FORMATO>-<DD>.<MM>.<AA>
+AEC03-EV01-WSI-07.01.26  → programa AEC, edición 03, evento 01, formato WSI, fecha 2026-01-07
+IATT01-WSI-24.01.26      → programa IATT, edición 01, sin nº de evento, formato WSI, fecha 2026-01-24
+```
+
+Regex: `^([A-Z]+)(\d+)(?:-EV(\d+))?-([A-Z]{3})-(\d{2})\.(\d{2})\.(\d{2})$`
+
+- Formatos encontrados: `LCI` (14), `WSI` (6), `WCI` (6), `PCI` (2).
+- 18 programas distintos (AEC, IATT, MGI, DEE, ITT, MEN, …).
+- Fecha del evento embebida en la etiqueta (formato día.mes.año; `31.08.26` confirma que el día va primero).
+
+Implicancias:
+1. **Alta automática de eventos**: al sincronizar tags, toda etiqueta que cumpla el patrón se propone como Evento con nombre, programa, formato y fecha ya llenos. El usuario solo confirma o ajusta la ventana.
+2. **Nuevas dimensiones de análisis**: gasto por programa (familia de eventos) y por formato.
+3. **Los eventos están muy juntos** (entre 1 y 39 días de separación; mediana ≈ 9). Una ventana fija se solapa a menudo, así que la regla de desempate es clave.
+
+### 7.3 Regla de atribución propuesta para estos eventos
+Para cada cargo de un contacto con una o más etiquetas de evento:
+1. Ventana de cada evento: desde `fecha_evento − 30 días` (o desde que se vio la etiqueta, si se conoce) hasta `fecha_evento + 7 días`. Ambos valores configurables por evento.
+2. Si varias ventanas cubren el cargo, gana **el próximo evento** (fecha ≥ día del cargo, hora Lima) más cercano; si ninguno es futuro, el **último evento pasado** dentro de su ventana posterior.
+3. Sin evento aplicable → `Orgánico / Sin campaña`.
+
+Es equivalente a "último tag aplicado" en la práctica (el contacto se inscribe al siguiente evento) y funciona también con el histórico, donde GHL no da la fecha de cada etiqueta.
+
+### 7.4 Pendiente
+- Muestra real de `wallet-transactions` para confirmar el formato de `ref:`.
+- Significado de los formatos `WSI`, `LCI`, `WCI`, `PCI` (solo para mostrar etiquetas legibles; no bloquea).
