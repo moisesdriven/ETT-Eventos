@@ -8,6 +8,20 @@
       "when": 1793382301060,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793383137217,
+      "tag": "0001_fase3_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793383623318,
+      "tag": "0002_alt_id_no_unico",
+      "breakpoints": true
     }
   ]
 }

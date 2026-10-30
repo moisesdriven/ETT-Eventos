@@ -9,7 +9,30 @@ El análisis y el plan por fases están en [`docs/fase-1-analisis-y-plan.md`](do
 ```
 apps/web        Next.js (App Router): login, roles, paneles
 packages/core   Lógica pura: fechas en hora de Lima, etiquetas de evento, montos, teléfonos, cifrado, contraseñas
-packages/db     Esquema Drizzle (esquemas `app` y `analytics`), migraciones y scripts
+packages/db     Esquema Drizzle (esquemas `app` y `analytics`), migraciones, scripts y cola de trabajos
+packages/ghl    Cliente de GoHighLevel: límite de 80 llamadas / 10 s, reintentos con backoff ante 429/5xx
+apps/worker     Sincronización: monedero de agencia, mensajes de WhatsApp, contactos, etiquetas y atribución
+```
+
+## Cómo se calcula el gasto
+
+1. **Cobros**: monedero de la agencia (`POST /saas/companies/{companyId}/wallet-transactions`, `Version: v3`) filtrado por la subcuenta. Solo se guardan los de WhatsApp.
+2. **Cruce**: cada cobro trae `ref: wamid…`, que coincide con el `altId` del mensaje (export de mensajes de WhatsApp). Del mensaje salen conversación, contacto y número remitente.
+3. **Eventos**: en *Etiquetas de evento* se marca una etiqueta existente como evento (inicio = fecha de la etiqueta, máximo 14 días). El cobro se atribuye al evento si ocurrió en esas fechas y el contacto tenía la etiqueta. Si varios eventos aplican, se reparte en partes iguales cuadrando al micro-dólar. El resto es «Orgánico / Sin campaña».
+4. **Conciliación**: todos los días se compara, por día de Lima, el total de la BD con el monedero de GHL.
+
+## Worker
+
+La cola de trabajos es la tabla `analytics.sync_runs` (también es el registro visible en *Sincronización*). El worker:
+
+- cada 15 min sincroniza las últimas 48 h;
+- cada día (03:00 Lima) actualiza el catálogo de etiquetas y contactos con etiqueta de evento, y concilia los últimos 7 días;
+- atiende los trabajos pedidos desde la app (carga histórica, conciliación, cálculo de evento).
+
+```bash
+pnpm --filter @ett/worker start                                   # requiere GHL_* y DATABASE_URL
+pnpm --filter @ett/worker enqueue backfill 2026-05-01 2026-10-31   # carga histórica (días de Lima)
+pnpm --filter @ett/worker enqueue conciliacion 2026-10-01 2026-10-31
 ```
 
 ## Desarrollo local

@@ -194,8 +194,14 @@ export const contactTagHistory = analytics.table(
     locationId: text("location_id").notNull(),
     contactId: text("contact_id").notNull(),
     tagNameNormalized: text("tag_name_normalized").notNull(),
+    /** Primer momento en que se vio la etiqueta (exacto si viene de webhook). */
     addedAt: ts("added_at"),
+    /** Último momento en que se sabe que NO la tenía (cota inferior del alta). */
+    addedAfter: ts("added_after"),
+    /** Primer momento en que se vio sin la etiqueta tras haberla tenido. */
     removedAt: ts("removed_at"),
+    /** Último momento en que se sabe que SÍ la tenía (cota inferior de la baja). */
+    removedAfter: ts("removed_after"),
     source: tagEvidenceSource("source").notNull(),
     evidence: jsonb("evidence").$type<Record<string, unknown>>(),
     createdAt: ts("created_at").notNull().defaultNow(),
@@ -240,7 +246,7 @@ export const messagesCache = analytics.table(
     syncedAt: ts("synced_at").notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("messages_cache_alt_id_uq").on(t.altId),
+    index("messages_cache_alt_id_idx").on(t.altId),
     index("messages_cache_conversation_idx").on(t.conversationId, t.sentAt),
     index("messages_cache_contact_idx").on(t.locationId, t.contactId, t.sentAt),
     index("messages_cache_day_idx").on(t.locationId, t.dayLima),
@@ -251,7 +257,7 @@ export const messagesCache = analytics.table(
 // Cobros de mensajería (fuente de verdad del dinero)
 // ---------------------------------------------------------------------------
 
-export const MESSAGE_CATEGORIES = ["marketing", "utility", "service", "authentication", "other"] as const;
+export const MESSAGE_CATEGORIES = ["marketing", "utility", "service", "authentication", "other", "inbound", "free_entry_point"] as const;
 export const messageCategory = analytics.enum("message_category", MESSAGE_CATEGORIES);
 /** Origen del cobro: monedero de GHL o facturación de Meta (pendiente de confirmar). */
 export const chargeSource = analytics.enum("charge_source", ["ghl_wallet", "meta"]);
@@ -270,6 +276,8 @@ export const messageCharges = analytics.table(
     settledAt: ts("settled_at").notNull(),
     dayLima: date("day_lima").generatedAlwaysAs(sql`((settled_at AT TIME ZONE 'America/Lima')::date)`),
     category: messageCategory("category").notNull(),
+    /** Tipo tal como viene en la descripción (p. ej. whatsapp_service_message). */
+    chargeType: text("charge_type").notNull(),
     amountUsd: usd("amount_usd").notNull(),
     messageRef: text("message_ref"),
     messageId: text("message_id"),
@@ -329,6 +337,7 @@ export const syncRuns = analytics.table(
     locationId: text("location_id").references(() => locations.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(),
     status: syncStatus("status").notNull().default("en_cola"),
+    params: jsonb("params").$type<Record<string, unknown>>(),
     rangeFrom: ts("range_from"),
     rangeTo: ts("range_to"),
     requestedBy: uuid("requested_by").references(() => users.id, { onDelete: "set null" }),
@@ -338,5 +347,5 @@ export const syncRuns = analytics.table(
     error: text("error"),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
-  (t) => [index("sync_runs_kind_created_idx").on(t.kind, t.createdAt)],
+  (t) => [index("sync_runs_kind_created_idx").on(t.kind, t.createdAt), index("sync_runs_status_idx").on(t.status, t.id)],
 );

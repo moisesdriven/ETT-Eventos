@@ -301,7 +301,7 @@ Efecto en el plan: el "Módulo 2 — Campañas y Eventos" se implementa así; la
 |---|---|
 | 1 — Análisis | Completa. Pendiente externo: origen del costo de WhatsApp (monedero GHL vacío para ETT). |
 | 2 — Monorepo, BD y seguridad | Completa: pnpm + Turborepo, Drizzle (esquemas `app` y `analytics`), login Argon2id, sesiones, roles, usuarios, auditoría, límite de intentos. |
-| 3 — Sincronización GHL | Siguiente. |
+| 3 — Sincronización GHL | Completa (ver sección 12). Incluye el módulo de etiquetas de evento y la página de sincronización. |
 
 Nota técnica: `drizzle-kit 0.31.11` generó la columna `message_charges.source` sin el esquema (`charge_source` en lugar de `"analytics"."charge_source"`); se corrigió a mano en `0000_init.sql`. Revisar las próximas migraciones que toquen enums.
 
@@ -350,3 +350,13 @@ Respuesta por transacción:
 - 1 460 cobros ($21.5241) → **1 460 cruzados por wamid (100 %)**, 0 dólares sin resolver.
 - Servicio: 544 por workflow y 358 por asesor (`app`); marketing: 76 por workflow; utilidad: 2 por asesor.
 - Con el mensaje se obtienen `conversationId`, `contactId` y el número remitente (`from` en salientes, `to` en entrantes).
+
+---
+
+## 12. Fase 3 — resultado con datos reales de ETT (2026-10-30)
+
+- Carga de octubre 2026: **5 792 cobros, $85.5968**, igual a la interfaz de GHL; **100 % cruzados** con su mensaje por wamid (0 sin resolver). 72 s de proceso.
+- Líneas detectadas: `+51922744815` (todo el gasto) y `+51922744948` (15 mensajes de $0).
+- GHL registra a veces dos mensajes con el mismo wamid (5 878 mensajes, 5 874 wamid distintos): el índice de `alt_id` dejó de ser único y el cruce elige el más antiguo con contacto.
+- Prueba del módulo con `men03-lci-08.10.26` (08–21 oct): **$79.7309** atribuidos a 213 contactos (de 220 con la etiqueta), 3 062 mensajes facturados. Orgánico del mismo periodo: $3.7612. Atribuido + orgánico = **$83.4921 = total del periodo**.
+- Cola de trabajos: se usa `analytics.sync_runs` en lugar de pg-boss (misma función, sin dependencias extra, y sirve de log visible).
