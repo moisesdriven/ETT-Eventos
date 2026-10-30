@@ -274,3 +274,21 @@ Implicancias de diseño:
 
 ### 8.6 Ventana de 14 días vs datos
 Contactos *creados* más de 14 días después del inicio: CRC01 27 %, CIA02 43 %, DEE15 3 %, el resto ≤ 2 %. Entre 5 % y 52 % de los contactos de cada etiqueta ya existían antes del inicio (contactos reutilizados). Con la regla estricta, el gasto de esos contactos fuera de la ventana irá a "Orgánico / Sin campaña".
+
+---
+
+## 9. Ajuste: módulo "Etiquetas de evento" (decisión del usuario, 2026-10-30)
+
+Se descarta el mapeo automático entre la tabla de eventos y las etiquetas. En su lugar:
+
+1. **Catálogo de etiquetas**: el worker sincroniza todas las etiquetas existentes en la subcuenta (`GET /locations/{id}/tags`) con su cantidad de contactos. Ninguna se considera evento por defecto.
+2. **Marcar como evento**: el usuario (rol `admin` o `analista`) elige una etiqueta existente y la marca como evento. El formulario precarga:
+   - nombre comercial (editable, vacío o sugerido);
+   - fecha de inicio = fecha leída de la etiqueta si cumple el patrón `dd.mm.aa`, editable;
+   - fecha de fin = inicio + 14 días (máximo, editable hacia abajo);
+   - opcionalmente, agrupar más de una etiqueta en el mismo evento.
+3. **Cálculo bajo demanda**: solo al marcar (o editar) un evento se encola el cálculo de su gasto: contactos con esa etiqueta × cobros de WhatsApp dentro de `[inicio, fin)` en hora de Lima. Se vuelve a calcular si cambian las fechas, las etiquetas o llegan cobros nuevos del periodo.
+4. **Desmarcar** una etiqueta elimina su atribución; ese gasto vuelve a "Orgánico / Sin campaña". El total del monedero nunca cambia.
+5. Las etiquetas no marcadas no participan en ningún cálculo.
+
+Efecto en el plan: el "Módulo 2 — Campañas y Eventos" se implementa así; la tabla de la sección 8.5 queda solo como referencia.
