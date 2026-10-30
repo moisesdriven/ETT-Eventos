@@ -10,3 +10,4 @@ coverage/
 !.env.production.example
 next-env.d.ts
 backups/
+scripts/windows/config.ps1

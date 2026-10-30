@@ -11,6 +11,12 @@ Todo se hace desde **PowerShell en tu PC con Windows**. Hay dos tipos de bloques
 
 En los ejemplos, reemplaza `IP_DEL_SERVIDOR` por la IP de tu VPS de Contabo y `root` por tu usuario si usas otro.
 
+## Opción recomendada: scripts de PowerShell
+
+En `scripts/windows` hay scripts que hacen toda la instalación y la operación desde tu PC sin escribir comandos en el servidor: `01-configurar-llave-ssh.ps1`, `02-instalar.ps1`, `03-crear-admin.ps1`, `04-carga-historica.ps1`, y para el día a día `estado.ps1`, `logs.ps1`, `actualizar.ps1`, `conciliar.ps1`, `descargar-respaldos.ps1`, entre otros. Las instrucciones están en [`scripts/windows/LEEME.md`](../scripts/windows/LEEME.md).
+
+El resto de esta guía explica los mismos pasos a mano, por si prefieres hacerlos uno por uno.
+
 ## Qué se levanta
 
 | Servicio | Qué hace |

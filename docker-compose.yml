@@ -90,6 +90,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        umask 077
         while true; do
           f=/backups/ett-$$(date -u +%Y%m%d-%H%M).dump
           pg_dump -Fc -f "$$f.tmp" && mv "$$f.tmp" "$$f" && echo "Respaldo $$f"
