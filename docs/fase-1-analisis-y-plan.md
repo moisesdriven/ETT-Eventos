@@ -194,6 +194,15 @@ Para cada cargo de un contacto con una o más etiquetas de evento:
 
 Es equivalente a "último tag aplicado" en la práctica (el contacto se inscribe al siguiente evento) y funciona también con el histórico, donde GHL no da la fecha de cada etiqueta.
 
-### 7.4 Pendiente
+### 7.4 Decisiones del usuario (2026-10-30)
+- **Ventana por defecto: −15 / +3 días** respecto a la fecha del evento (ajustable por evento). Reemplaza la propuesta −30 / +7 del punto 7.3.
+- **Atribución por evidencia, no por regla fija**: el gasto se asigna al evento cuya etiqueta tenía el contacto *en el momento del cobro*, usando el historial real. Fuentes, en orden de prioridad:
+  1. Webhook `ContactTagUpdate` (exacto, desde que se active).
+  2. Evidencia histórica en GHL (por verificar en la subcuenta real): mensajes de actividad de la conversación, `source`/workflow del mensaje saliente que generó el cobro y contenido o plantilla del mensaje que identifique al evento.
+  3. Solo si no hay evidencia: la ventana −15 / +3 días.
+  - Si aun así el cargo es elegible para varios eventos, se reparte entre ellos cuadrando al centavo (el residuo se asigna de forma determinista) y queda marcado como "atribución compartida" para auditoría.
+- La subcuenta real no está entre las 4 accesibles desde el conector actual (ninguna tiene contactos con estas etiquetas); hace falta acceso para verificar el punto 2.
+
+### 7.5 Pendiente
 - Muestra real de `wallet-transactions` para confirmar el formato de `ref:`.
 - Significado de los formatos `WSI`, `LCI`, `WCI`, `PCI` (solo para mostrar etiquetas legibles; no bloquea).
