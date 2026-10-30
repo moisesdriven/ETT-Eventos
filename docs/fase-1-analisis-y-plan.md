@@ -304,3 +304,49 @@ Efecto en el plan: el "Módulo 2 — Campañas y Eventos" se implementa así; la
 | 3 — Sincronización GHL | Siguiente. |
 
 Nota técnica: `drizzle-kit 0.31.11` generó la columna `message_charges.source` sin el esquema (`charge_source` en lugar de `"analytics"."charge_source"`); se corrigió a mano en `0000_init.sql`. Revisar las próximas migraciones que toquen enums.
+
+---
+
+## 11. Monedero de agencia — verificado (2026-10-30)
+
+Los cobros de WhatsApp de ETT se descuentan del **monedero de la agencia**, no del de la subcuenta. Por eso `/saas/locations/{id}/wallet-transactions` devolvía vacío.
+
+**Endpoint correcto**: `POST /saas/companies/{companyId}/wallet-transactions` ([documentación](https://marketplace.gohighlevel.com/docs/ghl/saas-api/list-agency-wallet-transactions)), header `Version: v3`, token de agencia.
+
+```json
+{ "skip": 0, "limit": 1000, "timezone": "UTC",
+  "filters": { "locationId": "<ETT>", "settlementTime": { "from": "2026-10-01T05:00:00.000Z", "to": "2026-11-01T05:00:00.000Z" } } }
+```
+
+Respuesta por transacción:
+
+```json
+{ "id": "6ae40fe3c36d70d47382f13f",
+  "description": "whatsapp_inbound_message ref: wamid.HBgL…",
+  "amount": -0.0703, "settlementTime": "2026-10-09 02:13:44.120",
+  "date": "Oct 9th 2026, 02:13:44 AM", "messageDate": "…", "locationName": "ETT",
+  "balance": "…", "credits": "…", "totalBalance": "…", "prevWalletBalance": "-", "prevWalletCredits": "-" }
+```
+
+### Cuadre contra la interfaz de GHL (octubre 2026, hora de Lima)
+
+| Categoría (`description`) | Cantidad | USD API | USD interfaz GHL |
+|---|---|---|---|
+| `whatsapp_service_message` | 2 846 | 49.7011 | $49.70 |
+| `whatsapp_marketing_message` | 508 | 35.6472 | $35.65 |
+| `whatsapp_utility_message` | 9 | 0.2485 | $0.25 |
+| `whatsapp_free_entry_point_message` | 11 | 0 | $0.00 |
+| `whatsapp_inbound_message` | 2 418 | 0 | (no figura) |
+| **Total** | **5 792** | **85.5968** | **$85.60 / 5 792** |
+
+### Reglas de parseo confirmadas
+- `amount` es negativo para cargos → se guarda `amount_usd = -amount`.
+- `ref:` siempre es un **wamid** (5 792 de 5 792) → cruce directo con `altId` del export de mensajes.
+- `settlementTime` llega en **dos formatos**, ambos en UTC: `2026-10-09 02:13:44.120` (sin zona, la mayoría) y `2026-10-30T03:32:52.353Z` (los más recientes). El parser debe normalizar ambos.
+- Precios observados: marketing $0.0703 / $0.074 / $0.0397; servicio $0.03 / $0.0113 / $0.0085 / $0.02 / $0; utilidad $0.03 / $0.0085. El costo se toma siempre del cobro, nunca de una tarifa.
+- Los mensajes entrantes y de punto de entrada gratuito cuestan $0, pero se guardan: sirven como evidencia de actividad y de inscripción.
+
+### Cruce cobro → mensaje (9 de octubre, día con más movimiento)
+- 1 460 cobros ($21.5241) → **1 460 cruzados por wamid (100 %)**, 0 dólares sin resolver.
+- Servicio: 544 por workflow y 358 por asesor (`app`); marketing: 76 por workflow; utilidad: 2 por asesor.
+- Con el mensaje se obtienen `conversationId`, `contactId` y el número remitente (`from` en salientes, `to` en entrantes).
