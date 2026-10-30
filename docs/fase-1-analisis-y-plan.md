@@ -206,3 +206,71 @@ Es equivalente a "último tag aplicado" en la práctica (el contacto se inscribe
 ### 7.5 Pendiente
 - Muestra real de `wallet-transactions` para confirmar el formato de `ref:`.
 - Significado de los formatos `WSI`, `LCI`, `WCI`, `PCI` (solo para mostrar etiquetas legibles; no bloquea).
+
+---
+
+## 8. Muestras reales de la subcuenta ETT (2026-10-30, solo lectura)
+
+Subcuenta `ETT` (zona horaria configurada en GHL: `America/Bogota`, mismo desfase UTC‑5 que Lima). Tokens leídos desde variables de entorno; nunca se imprimieron.
+
+### 8.1 Regla de ventana confirmada por el usuario
+- El inicio del evento es la fecha de la etiqueta; duración máxima **14 días incluyendo seguimiento** → ventana `[fecha 00:00 Lima, fecha + 14 días 00:00 Lima)`. Reemplaza la ventana −15 / +3.
+
+### 8.2 Monedero (`wallet-transactions`) — sigue sin datos ⚠️
+- Endpoint correcto según la [documentación oficial](https://marketplace.gohighlevel.com/docs/ghl/saas-api/list-location-wallet-transactions): `POST /saas/locations/{id}/wallet-transactions`, header `Version: v3`, cuerpo `{skip, limit, filters:{locationId, settlementTime:{from,to}, chargeType}, timezone}`.
+- Con el token de agencia (y también con el de la subcuenta) responde `201` pero **`transactions: []`** en todos los rangos probados (día, mes, semestre; 2025 y 2026) y también en otras subcuentas de la agencia. Rangos muy amplios devuelven `500`.
+- Hipótesis: (a) los cargos de WhatsApp de ETT no pasan por el monedero de GHL (WABA pagada directamente a Meta), o (b) el endpoint necesita otro permiso o rebilling activo. **Hay que confirmarlo en la interfaz de GHL.**
+
+### 8.3 Mensajes de WhatsApp
+- `GET /conversations/messages/export?channel=WhatsApp` funciona con el token de la subcuenta: **150 237 mensajes**.
+- Línea observada: `+51 922 744 815` (formato con espacios → normalizar).
+- `source`: `workflow` (automatizaciones), `app` (asesor), vacío (entrantes). Los mensajes de workflow traen en `attachments` una URL con el `workflowId`.
+- `GET /conversations/messages/{id}` devuelve `401 Token source/channel mismatch` con token `pit-`; no se usará (el export cubre lo necesario).
+
+### 8.4 Historial de etiquetas
+- GHL **no** registra en la conversación cuándo se aplica una etiqueta (solo actividades de oportunidad: `opportunity_created`, `opportunity_stage_updated`, pipeline `ETT`).
+- Evidencia útil encontrada: el **primer mensaje entrante** suele ser el texto prellenado del anuncio, que nombra el evento (p. ej. "Quiero inscribirme en Mentores 100K GP"), y la creación del contacto y de la oportunidad ocurren en el mismo segundo. Esto permite fechar la inscripción a un evento.
+- Las etiquetas en GHL están en **minúsculas**.
+
+### 8.5 Etiquetas reales vs tabla de eventos
+67 etiquetas en la subcuenta. Solo 16 de los 28 códigos de la tabla existen tal cual; otros tienen variantes:
+
+| Evento (tabla) | Código tabla | Etiqueta(s) reales en GHL | Contactos |
+|---|---|---|---|
+| Aceleradora Ecommerce | AEC03-EV01-WSI-07.01.26 | `aec03-ev01-wsi-07.01.26`, ¿`aec-ev01-wsi-07.01.26`? | 2 |
+| Aceleradora Ecommerce | AEC03-EV02-WSI-10.01.26 | `aec03-ev02-wsi-10.01.26` | 1 |
+| Alquiler Venta Vehículos | AVV02-EV01-LCI-15.01.26 | igual | 528 |
+| Aceleradora Ecommerce | AEC03-EV03-WSI-17.01.26 | **no existe** | — |
+| IATT | IATT01-WSI-24.01.26 | **no existe**; ¿`lan02-ev02-wsi-24.01.26`? | — |
+| IATT | IATT02-WSI-29.01.26 | **no existe**; ¿`lan02-ev02-wsi-29.01.26`? | — |
+| Mentoría Grupal Inmobiliaria | MGI04-WCI-07.02.26 | ¿`min04-ev01-wp-07.02.26`? | — |
+| Desafío Ecommerce | DEE14-EV01-LCI-19.02.26 | igual; ¿también `dee14-ev01-wsi-26.02.26`? | 676 |
+| IATT | IATT03-WCI-21.02.26 | ¿`iatt-ev03-wci-21.02.26`? | — |
+| IATT | IATT04-WSI-01.03.26 | ¿`iatt-ev04-wsi-01.03.26`? | — |
+| Importaciones Todo Terreno | ITT03-EV03-LCI-13.03.26 | igual; ¿también `itt03-ev03-wsi-17.03.26`? | 207 |
+| Plano 360 | PES02-EV02-LCI-20.03.26 | igual | 231 |
+| Mentores 100k | MEN02-EV012-LCI-27.03.26 | igual; ¿también `men-ev013-lci-27.03.26`, `men03-lci-27.03.26`? | 356 |
+| Método Driven | MED02-LCI-17.04.26 | ¿`mcd02-ev02-lci-17.04.26`? | — |
+| Remates Judiciales | REJ04-EV01-LCI-30.04.26 | igual | 438 |
+| Cerrador Inmobiliario | CEI05-EV01-LCI-21.05.26 | igual | 957 |
+| Aceleradora Ecommerce | AEC04-EV01-WCI-12.06.26 | igual | 166 |
+| Creando con Cuerdas | CRC01-EV01-WCI-13.06.26 | igual | 351 |
+| CURSO IA | CIA02-EV01-WCI-14.06.26 | igual | 147 |
+| Desafío Ecommerce | DEE15-EV01-LCI-23.07.26 | igual | 937 |
+| Presencial – Remates Judiciales | PRJ05-LCI-01.08.26 | ¿`rej05-ev01-lci-01.08.26`? | — |
+| Importaciones Todo Terreno | ITT04-EV01-LCI-13.08.26 | igual | 219 |
+| Mentoría Grupal Remates | MGR01-PCI-22.08.26 | **no existe** | — |
+| Ventas 360 | CVS01-EV01-LCI-27.08.26 | igual | 590 |
+| Presencial – Cerrador Inmobiliario | PCI01-WCI-31.08.26 | ¿`cip-ev01-wci-31.08.26`? | — |
+| Plataforma – Remates Judiciales | PLRJ01-LCI-12.09.26 | ¿`rej06-ev01-lci-12.09.26`? | — |
+| Mentoría Grupal Inmobiliaria | MGI05-PCI-26.09.26 | **no existe** | — |
+| Mentores 100k | MEN03-LCI-08.10.26 | igual | 220 |
+
+Además hay etiquetas de eventos de 2025 (`avv01-ev03-wci-04.10.25`, `cia01-ev02-wci-24.09.25`, `cei05-ev01-lci-13.11.25`, `dee13`, `eam04`, `itt02`, `pes01`, `rej03`…).
+
+Implicancias de diseño:
+- El patrón real es más flexible: programa sin edición (`aec-`, `iatt-`, `men-`), formato de 2 letras (`wp`). Parser tolerante + **mapeo manual etiqueta(s) → evento** en el catálogo, con sugerencia automática por fecha.
+- Un evento puede tener varias etiquetas (ya contemplado en `campaign_tags`).
+
+### 8.6 Ventana de 14 días vs datos
+Contactos *creados* más de 14 días después del inicio: CRC01 27 %, CIA02 43 %, DEE15 3 %, el resto ≤ 2 %. Entre 5 % y 52 % de los contactos de cada etiqueta ya existían antes del inicio (contactos reutilizados). Con la regla estricta, el gasto de esos contactos fuera de la ventana irá a "Orgánico / Sin campaña".
