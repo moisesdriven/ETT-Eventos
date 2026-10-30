@@ -1,0 +1,20 @@
+{
+  "name": "ett-eventos",
+  "private": true,
+  "packageManager": "pnpm@10.18.3",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @ett/db generate",
+    "db:migrate": "pnpm --filter @ett/db migrate",
+    "db:create-admin": "pnpm --filter @ett/db create-admin"
+  },
+  "devDependencies": {
+    "turbo": "2.11.10",
+    "typescript": "5.9.3"
+  }
+}

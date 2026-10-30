@@ -292,3 +292,15 @@ Se descarta el mapeo automático entre la tabla de eventos y las etiquetas. En s
 5. Las etiquetas no marcadas no participan en ningún cálculo.
 
 Efecto en el plan: el "Módulo 2 — Campañas y Eventos" se implementa así; la tabla de la sección 8.5 queda solo como referencia.
+
+---
+
+## 10. Estado de avance
+
+| Fase | Estado |
+|---|---|
+| 1 — Análisis | Completa. Pendiente externo: origen del costo de WhatsApp (monedero GHL vacío para ETT). |
+| 2 — Monorepo, BD y seguridad | Completa: pnpm + Turborepo, Drizzle (esquemas `app` y `analytics`), login Argon2id, sesiones, roles, usuarios, auditoría, límite de intentos. |
+| 3 — Sincronización GHL | Siguiente. |
+
+Nota técnica: `drizzle-kit 0.31.11` generó la columna `message_charges.source` sin el esquema (`charge_source` en lugar de `"analytics"."charge_source"`); se corrigió a mano en `0000_init.sql`. Revisar las próximas migraciones que toquen enums.
