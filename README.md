@@ -25,7 +25,7 @@ apps/worker     Sincronización: monedero de agencia, mensajes de WhatsApp, cont
 
 | Ruta | Para qué | Rol mínimo |
 |---|---|---|
-| `/` | Dashboard: gasto total y por categoría, contactos y conversaciones únicos, costo por contacto/conversación, saldo y días restantes, evolución diaria/mensual, gasto por número, top 10 eventos | lectura |
+| `/` | Dashboard: gasto total y por categoría, contactos y conversaciones únicos, costo por contacto/conversación, gasto promedio por día, evolución diaria/mensual, gasto por número, top 10 eventos | lectura |
 | `/eventos` | Marcar etiquetas como evento, tabla de rendimiento por evento, detalle con gráfico diario y transacciones | lectura (editar: analista) |
 | `/numeros` | Comparativo por línea de WhatsApp: categorías, contactos, eventos, costo por contacto, gasto mensual | lectura |
 | `/sincronizacion` | Estado, carga histórica, conciliación y registro de trabajos | admin |

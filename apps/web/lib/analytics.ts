@@ -1,5 +1,5 @@
 import "server-only";
-import { addDays, diffDays, toLimaDay } from "@ett/core";
+import { addDays, diffDays } from "@ett/core";
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "./db";
 import type { Filters } from "./filters";
@@ -175,37 +175,6 @@ export async function getTopEvents(locationId: string, f: Filters, limit = 10): 
   }));
   const organico = mapped.find((r) => r.eventId === null) ?? { eventId: null, name: "Orgánico / Sin campaña", totalUsd: 0, contactos: 0, ...emptyTotals() };
   return { top: mapped.filter((r) => r.eventId !== null).slice(0, limit), organico };
-}
-
-export interface WalletStatus {
-  balanceUsd: number | null;
-  balanceAt: Date | null;
-  avgDaily7d: number;
-  daysLeft: number | null;
-}
-
-/**
- * Saldo según el último cobro de la subcuenta (GHL no expone el saldo por API para
- * esta subcuenta) y proyección con el gasto promedio de los últimos 7 días completos.
- */
-export async function getWalletStatus(locationId: string): Promise<WalletStatus> {
-  const [last] = await db.execute<{ balance: string | null; settled_at: Date }>(sql`
-    SELECT raw_payload->>'totalBalance' AS balance, settled_at
-      FROM analytics.message_charges
-     WHERE location_id = ${locationId} AND raw_payload ? 'totalBalance'
-     ORDER BY settled_at DESC LIMIT 1`);
-  const today = toLimaDay(new Date());
-  const [avg] = await db.execute<{ total: string | null }>(sql`
-    SELECT sum(amount_usd)::text AS total FROM analytics.message_charges
-     WHERE location_id = ${locationId} AND day_lima BETWEEN ${addDays(today, -7)}::date AND ${addDays(today, -1)}::date`);
-  const balance = last?.balance != null && Number.isFinite(Number(last.balance)) ? Number(last.balance) : null;
-  const avgDaily7d = Number(avg?.total ?? 0) / 7;
-  return {
-    balanceUsd: balance,
-    balanceAt: last?.settled_at ? new Date(last.settled_at) : null,
-    avgDaily7d,
-    daysLeft: balance !== null && avgDaily7d > 0 ? balance / avgDaily7d : null,
-  };
 }
 
 export async function getFilterOptions(locationId: string) {

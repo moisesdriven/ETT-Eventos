@@ -1,4 +1,4 @@
-import { formatPercent, formatUnitUsd, formatUsd } from "@ett/core";
+import { diffDays, formatPercent, formatUnitUsd, formatUsd } from "@ett/core";
 import { Download } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -9,13 +9,12 @@ import { Stat } from "@/components/stat";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
-import { getByPhone, getFilterOptions, getKpis, getTimeSeries, getTopEvents, getWalletStatus } from "@/lib/analytics";
+import { getByPhone, getFilterOptions, getKpis, getTimeSeries, getTopEvents } from "@/lib/analytics";
 import { can } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { formatDay } from "@/lib/dates";
 import { filtersToQuery, parseFilters, type RawSearchParams } from "@/lib/filters";
 import { getLocation } from "@/lib/location";
-import { formatDateTimeLima } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +29,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <Alert>La subcuenta aún no se ha sincronizado. Inicia el worker para cargar datos.</Alert>;
   }
   const f = parseFilters(sp);
-  const [kpis, series, phones, events, wallet, options] = await Promise.all([
+  const days = diffDays(f.from, f.to) + 1;
+  const [kpis, series, phones, events, options] = await Promise.all([
     getKpis(location.id, f),
     getTimeSeries(location.id, f),
     getByPhone(location.id, f),
     getTopEvents(location.id, f),
-    getWalletStatus(location.id),
     getFilterOptions(location.id),
   ]);
   const canExport = can(user.role, "datos.exportar");
@@ -71,17 +70,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           value={n(kpis.conversaciones)}
           hint={`Costo por conversación ${kpis.conversaciones ? formatUnitUsd(kpis.totalUsd / kpis.conversaciones) : "—"}`}
         />
-        <Stat
-          label="Saldo del monedero"
-          value={wallet.balanceUsd !== null ? formatUsd(wallet.balanceUsd) : "—"}
-          hint={
-            wallet.daysLeft !== null
-              ? `≈ ${Math.floor(wallet.daysLeft)} días al ritmo de ${formatUsd(wallet.avgDaily7d)}/día (7 días)`
-              : wallet.balanceAt
-                ? `Al ${formatDateTimeLima(wallet.balanceAt)}`
-                : "Sin datos"
-          }
-        />
+        <Stat label="Gasto promedio por día" value={formatUsd(kpis.totalUsd / days)} hint={`${n(days)} días en el periodo`} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

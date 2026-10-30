@@ -367,10 +367,10 @@ Respuesta por transacción:
 
 ## 13. Fase 5 — Dashboard y analítica
 
-- **Dashboard** (`/`): gasto total, desglose $ y % por Marketing/Utilidad/Servicio, mensajes facturados, contactos y conversaciones únicos, costo por contacto y por conversación, saldo y proyección de días; columnas apiladas por día o mes (USD o cantidad) con tooltip y tabla; gasto por número; top 10 eventos y orgánico.
+- **Dashboard** (`/`): gasto total, desglose $ y % por Marketing/Utilidad/Servicio, mensajes facturados, contactos y conversaciones únicos, costo por contacto y por conversación, gasto promedio por día; columnas apiladas por día o mes (USD o cantidad) con tooltip y tabla; gasto por número; top 10 eventos y orgánico.
 - **Filtros globales**: rápido (hoy, ayer, 7 días, este mes, mes pasado, este año), mes y año, rango libre, número, evento (o «Orgánico / Sin campaña»), categorías, vista día/mes. En la URL y recordados en el navegador.
 - **Números** (`/numeros`): comparativo por línea, nombre editable, gasto mensual, eventos por número.
 - **Detalle de evento**: gráfico diario de la parte atribuida.
 - **Exportación CSV** (UTF-8 con BOM para Excel, protección contra inyección de fórmulas): dashboard, números, resumen de eventos y detalle completo de transacciones por evento.
 - Colores: paleta categórica validada para daltonismo (azul marketing, naranja utilidad, aqua servicio), con versión para modo oscuro; cada gráfico tiene leyenda y tabla.
-- **Saldo**: GHL no expone el saldo de ETT por API (`wallet-balance` responde `WALLET_BALANCE_UNAVAILABLE`, los cobros salen del monedero de la agencia). Se muestra el `totalBalance` del último cobro de ETT con su hora; puede diferir del saldo que muestra la interfaz de GHL. Pendiente confirmar con el usuario qué saldo usar.
+- **Saldo del monedero**: descartado por decisión del usuario (2026-10-30). El sistema solo mide el gasto; en su lugar se muestra el gasto promedio por día del periodo.
