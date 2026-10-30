@@ -18,7 +18,7 @@ export async function createContext(): Promise<Ctx> {
     { onRetry: (info) => log("warn", "Reintento GHL", info) },
   );
   const location = await ghl.getLocation();
-  const companyId = env.GHL_COMPANY_ID ?? location.companyId;
+  const companyId = env.GHL_COMPANY_ID || location.companyId;
   if (!companyId) throw new Error("No se pudo determinar el companyId de la agencia; define GHL_COMPANY_ID");
 
   await db

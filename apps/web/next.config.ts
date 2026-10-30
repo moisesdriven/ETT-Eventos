@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -26,6 +27,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Monorepo: el tracing debe incluir los paquetes del workspace.
+  outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
   poweredByHeader: false,
   transpilePackages: ["@ett/core", "@ett/db"],
   serverExternalPackages: ["@node-rs/argon2"],

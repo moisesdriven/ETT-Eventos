@@ -78,7 +78,10 @@ export async function runJob(ctx: Ctx, run: SyncRun): Promise<Stats> {
       return syncCatalog(ctx);
     case "conciliacion": {
       const [from, to] = requireRange(run);
-      return reconcile(ctx, from, to);
+      const result = await reconcile(ctx, from, to);
+      // Si faltaban cobros, se completa el rango (mensajes, cruce, contactos y atribución).
+      if (!result.corregido) return result;
+      return { ...result, resincronizacion: await runChunked(ctx, run, from, to, 7) };
     }
     case "evento": {
       const eventId = String(run.params?.eventId ?? "");

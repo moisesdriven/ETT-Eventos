@@ -303,7 +303,7 @@ Efecto en el plan: el "Módulo 2 — Campañas y Eventos" se implementa así; la
 | 2 — Monorepo, BD y seguridad | Completa: pnpm + Turborepo, Drizzle (esquemas `app` y `analytics`), login Argon2id, sesiones, roles, usuarios, auditoría, límite de intentos. |
 | 3 — Sincronización GHL | Completa (ver sección 12). Incluye el módulo de etiquetas de evento y la página de sincronización. |
 | 4 y 5 — Eventos, números y dashboard | Completas (ver sección 13). |
-| 6 — Docker, CI y verificación | Siguiente. |
+| 6 — Docker, CI y verificación | Completa (ver sección 14). |
 
 Nota técnica: `drizzle-kit 0.31.11` generó la columna `message_charges.source` sin el esquema (`charge_source` en lugar de `"analytics"."charge_source"`); se corrigió a mano en `0000_init.sql`. Revisar las próximas migraciones que toquen enums.
 
@@ -374,3 +374,14 @@ Respuesta por transacción:
 - **Exportación CSV** (UTF-8 con BOM para Excel, protección contra inyección de fórmulas): dashboard, números, resumen de eventos y detalle completo de transacciones por evento.
 - Colores: paleta categórica validada para daltonismo (azul marketing, naranja utilidad, aqua servicio), con versión para modo oscuro; cada gráfico tiene leyenda y tabla.
 - **Saldo del monedero**: descartado por decisión del usuario (2026-10-30). El sistema solo mide el gasto; en su lugar se muestra el gasto promedio por día del periodo.
+
+---
+
+## 14. Fase 6 — Docker, CI y verificación
+
+- `Dockerfile` multi-etapa: `web` (salida standalone de Next.js, usuario sin privilegios, healthcheck) y `worker` (también ejecuta migraciones y scripts).
+- `docker-compose.yml` para Contabo: `db` (PostgreSQL 16 sin puertos publicados), `migrate` (antes de web y worker), `web` (etiquetas de Traefik con HTTPS), `worker` y `backup` (pg_dump diario, 14 días).
+- CI en GitHub Actions: tipos, pruebas, migraciones dos veces, verificación de que el esquema no tiene cambios sin migración, compilación web e imágenes Docker.
+- Prueba del stack completo con `docker compose` en el entorno de desarrollo: migraciones, web con cookie `__Host-` segura y HSTS, worker sincronizando con GHL, respaldo y restauración verificados.
+- Corregido durante la prueba: `GHL_COMPANY_ID` vacío impedía arrancar el worker; el respaldo inicial se tomaba antes de las migraciones; la conciliación que agrega cobros ahora resincroniza el rango (prueba: 22 días con descuadre en una base vacía → 5 791 cobros de octubre, $85.5968, 100 % cruzados).
+- Guía: [`docs/despliegue-contabo.md`](despliegue-contabo.md).
