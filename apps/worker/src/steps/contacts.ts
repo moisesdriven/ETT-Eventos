@@ -5,6 +5,14 @@ import { and, arrayOverlaps, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Ctx } from "../context";
 import { tsParam } from "../sql";
 
+async function mapConcurrent<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]!);
+  });
+  await Promise.all(workers);
+}
+
 function displayName(c: GhlContact): string | null {
   const full = [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
   return full || c.contactName || null;
@@ -96,15 +104,20 @@ export async function syncMissingContacts(ctx: Ctx, from: Date, to: Date) {
        AND cc.contact_id IS NULL`);
   let saved = 0;
   let missing = 0;
-  for (const { contact_id } of rows) {
-    const contact = await ctx.ghl.getContact(contact_id);
-    if (!contact) {
-      missing++;
-      continue;
-    }
-    await saveContactSnapshot(ctx, contact);
-    saved++;
-  }
+  // Hasta 8 solicitudes en paralelo; el limitador del cliente mantiene el tope de GHL.
+  await mapConcurrent(
+    rows.map((r) => r.contact_id),
+    8,
+    async (id) => {
+      const contact = await ctx.ghl.getContact(id);
+      if (!contact) {
+        missing++;
+        return;
+      }
+      await saveContactSnapshot(ctx, contact);
+      saved++;
+    },
+  );
   return { contactosNuevos: saved, contactosNoEncontrados: missing };
 }
 

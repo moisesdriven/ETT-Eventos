@@ -16,6 +16,9 @@ import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { formatDay, windowDays } from "@/lib/dates";
 import { listEventSummaries } from "@/lib/events";
+import { getTimeSeries } from "@/lib/analytics";
+import { FILTER_CATEGORIES } from "@/lib/filters";
+import { TimeChart } from "@/components/charts/time-chart";
 import { getLocation } from "@/lib/location";
 import { getTagOptions } from "@/lib/tag-options";
 import { formatDateTimeLima } from "@/lib/utils";
@@ -81,6 +84,16 @@ export default async function EventDetailPage({ params, searchParams }: { params
      ORDER BY mc.settled_at DESC
      LIMIT 200`);
 
+  const series = await getTimeSeries(location.id, {
+    from: w.from,
+    to: w.to,
+    preset: null,
+    month: null,
+    phoneId: null,
+    categories: [...FILTER_CATEGORIES],
+    event: id,
+    granularity: "dia",
+  });
   const tagOptions = canEdit ? await getTagOptions(location.id, id) : [];
   const billable = event.marketingN + event.utilityN + event.serviceN;
 
@@ -130,14 +143,17 @@ export default async function EventDetailPage({ params, searchParams }: { params
         <Stat label="Servicio" value={formatUsd(event.serviceUsd)} hint={`${n(event.serviceN)} mensajes`} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Gasto por día</CardTitle>
-            <CardDescription>Días en hora de Lima. El gráfico llega con el dashboard (fase 5).</CardDescription>
+            <CardDescription>Días en hora de Lima, solo la parte atribuida a este evento.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
+            <TimeChart data={series} keys={FILTER_CATEGORIES} />
+            <details className="mt-4 text-sm">
+            <summary className="cursor-pointer text-muted-foreground">Ver tabla con contactos por día</summary>
+            <Table className="mt-2">
               <thead>
                 <tr>
                   <Th>Día</Th>
@@ -157,6 +173,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
                 ))}
               </tbody>
             </Table>
+            </details>
           </CardContent>
         </Card>
         <Card>
@@ -190,7 +207,14 @@ export default async function EventDetailPage({ params, searchParams }: { params
 
       <Card>
         <CardHeader>
-          <CardTitle>Transacciones con costo (últimas 200)</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>Transacciones con costo (últimas 200)</CardTitle>
+            {can(user.role, "datos.exportar") ? (
+              <a href={`/api/export/eventos/${id}`} className="text-sm font-medium text-primary hover:underline">
+                Exportar todas (CSV)
+              </a>
+            ) : null}
+          </div>
           <CardDescription>
             Fecha en hora de Lima. «Ventana»: el contacto tiene hoy la etiqueta y el cobro cayó dentro de las fechas; «Historial»: se confirmó que ya tenía la
             etiqueta en ese momento.

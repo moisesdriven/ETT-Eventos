@@ -44,7 +44,14 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
 
       <Card>
         <CardHeader>
-          <CardTitle>Eventos ({summaries.length})</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>Eventos ({summaries.length})</CardTitle>
+            {can(user.role, "datos.exportar") && summaries.length ? (
+              <a href="/api/export/eventos" className="text-sm font-medium text-primary hover:underline">
+                Exportar resumen (CSV)
+              </a>
+            ) : null}
+          </div>
           <CardDescription>Montos en USD. Cantidades = mensajes facturados por categoría.</CardDescription>
         </CardHeader>
         <CardContent>

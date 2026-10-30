@@ -21,6 +21,18 @@ apps/worker     Sincronización: monedero de agencia, mensajes de WhatsApp, cont
 3. **Eventos**: en *Etiquetas de evento* se marca una etiqueta existente como evento (inicio = fecha de la etiqueta, máximo 14 días). El cobro se atribuye al evento si ocurrió en esas fechas y el contacto tenía la etiqueta. Si varios eventos aplican, se reparte en partes iguales cuadrando al micro-dólar. El resto es «Orgánico / Sin campaña».
 4. **Conciliación**: todos los días se compara, por día de Lima, el total de la BD con el monedero de GHL.
 
+## Pantallas
+
+| Ruta | Para qué | Rol mínimo |
+|---|---|---|
+| `/` | Dashboard: gasto total y por categoría, contactos y conversaciones únicos, costo por contacto/conversación, saldo y días restantes, evolución diaria/mensual, gasto por número, top 10 eventos | lectura |
+| `/eventos` | Marcar etiquetas como evento, tabla de rendimiento por evento, detalle con gráfico diario y transacciones | lectura (editar: analista) |
+| `/numeros` | Comparativo por línea de WhatsApp: categorías, contactos, eventos, costo por contacto, gasto mensual | lectura |
+| `/sincronizacion` | Estado, carga histórica, conciliación y registro de trabajos | admin |
+| `/admin/usuarios`, `/admin/auditoria` | Usuarios, roles y auditoría | admin |
+
+Los filtros (periodo rápido, mes y año, rango libre, número, evento, categorías, vista por día o mes) viajan en la URL y se recuerdan en el navegador. Las exportaciones CSV (analista o admin) usan los mismos filtros y quedan registradas en auditoría.
+
 ## Worker
 
 La cola de trabajos es la tabla `analytics.sync_runs` (también es el registro visible en *Sincronización*). El worker:

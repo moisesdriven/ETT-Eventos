@@ -302,6 +302,8 @@ Efecto en el plan: el "Módulo 2 — Campañas y Eventos" se implementa así; la
 | 1 — Análisis | Completa. Pendiente externo: origen del costo de WhatsApp (monedero GHL vacío para ETT). |
 | 2 — Monorepo, BD y seguridad | Completa: pnpm + Turborepo, Drizzle (esquemas `app` y `analytics`), login Argon2id, sesiones, roles, usuarios, auditoría, límite de intentos. |
 | 3 — Sincronización GHL | Completa (ver sección 12). Incluye el módulo de etiquetas de evento y la página de sincronización. |
+| 4 y 5 — Eventos, números y dashboard | Completas (ver sección 13). |
+| 6 — Docker, CI y verificación | Siguiente. |
 
 Nota técnica: `drizzle-kit 0.31.11` generó la columna `message_charges.source` sin el esquema (`charge_source` en lugar de `"analytics"."charge_source"`); se corrigió a mano en `0000_init.sql`. Revisar las próximas migraciones que toquen enums.
 
@@ -360,3 +362,15 @@ Respuesta por transacción:
 - GHL registra a veces dos mensajes con el mismo wamid (5 878 mensajes, 5 874 wamid distintos): el índice de `alt_id` dejó de ser único y el cruce elige el más antiguo con contacto.
 - Prueba del módulo con `men03-lci-08.10.26` (08–21 oct): **$79.7309** atribuidos a 213 contactos (de 220 con la etiqueta), 3 062 mensajes facturados. Orgánico del mismo periodo: $3.7612. Atribuido + orgánico = **$83.4921 = total del periodo**.
 - Cola de trabajos: se usa `analytics.sync_runs` en lugar de pg-boss (misma función, sin dependencias extra, y sirve de log visible).
+
+---
+
+## 13. Fase 5 — Dashboard y analítica
+
+- **Dashboard** (`/`): gasto total, desglose $ y % por Marketing/Utilidad/Servicio, mensajes facturados, contactos y conversaciones únicos, costo por contacto y por conversación, saldo y proyección de días; columnas apiladas por día o mes (USD o cantidad) con tooltip y tabla; gasto por número; top 10 eventos y orgánico.
+- **Filtros globales**: rápido (hoy, ayer, 7 días, este mes, mes pasado, este año), mes y año, rango libre, número, evento (o «Orgánico / Sin campaña»), categorías, vista día/mes. En la URL y recordados en el navegador.
+- **Números** (`/numeros`): comparativo por línea, nombre editable, gasto mensual, eventos por número.
+- **Detalle de evento**: gráfico diario de la parte atribuida.
+- **Exportación CSV** (UTF-8 con BOM para Excel, protección contra inyección de fórmulas): dashboard, números, resumen de eventos y detalle completo de transacciones por evento.
+- Colores: paleta categórica validada para daltonismo (azul marketing, naranja utilidad, aqua servicio), con versión para modo oscuro; cada gráfico tiene leyenda y tabla.
+- **Saldo**: GHL no expone el saldo de ETT por API (`wallet-balance` responde `WALLET_BALANCE_UNAVAILABLE`, los cobros salen del monedero de la agencia). Se muestra el `totalBalance` del último cobro de ETT con su hora; puede diferir del saldo que muestra la interfaz de GHL. Pendiente confirmar con el usuario qué saldo usar.
