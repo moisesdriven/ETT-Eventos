@@ -2,7 +2,7 @@
 # config.ps1 no se sube a GitHub (está en .gitignore).
 
 # IP o nombre del VPS de Contabo
-$Servidor = 'IP_DEL_SERVIDOR'
+$Servidor = '144.91.106.148'
 
 # Usuario SSH (los scripts asumen root para instalar Docker)
 $Usuario = 'root'
@@ -10,12 +10,12 @@ $Usuario = 'root'
 # Puerto SSH
 $Puerto = 22
 
-# Carpeta del proyecto en el servidor, relativa a la carpeta personal del usuario
-$Carpeta = 'ett-eventos'
+# Carpeta del proyecto en el servidor (ruta absoluta)
+$Carpeta = '/opt/ett-eventos'
 
-# Repositorio y rama a desplegar (usa 'main' cuando el pull request esté fusionado)
-$RepoUrl = 'https://github.com/moisesdriven/ett-eventos.git'
-$Rama = 'main'
+# Repositorio (público) y rama a desplegar; cambia a 'main' cuando el pull request esté fusionado
+$RepoUrl = 'https://github.com/moisesdriven/ETT-Eventos.git'
+$Rama = 'claude/inspiring-lamport-0y4obi'
 
 # Carpeta de tu PC donde se descargan los respaldos
 $CarpetaRespaldosLocal = 'C:\Respaldos\ett-eventos'

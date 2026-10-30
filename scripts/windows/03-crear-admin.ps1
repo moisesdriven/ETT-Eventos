@@ -13,7 +13,7 @@ if ($clave -match "[\r\n]") { throw 'La contraseña no puede tener saltos de lí
 
 $script = @'
 set -euo pipefail
-cd ~/__CARPETA__
+cd __CARPETA__
 ADMIN_EMAIL=$(cat <<'ETT_CORREO'
 __CORREO__
 ETT_CORREO

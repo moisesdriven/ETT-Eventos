@@ -2,7 +2,7 @@
 
 Plataforma interna para medir el costo real de WhatsApp en GoHighLevel por día, número remitente y evento (etiqueta), en hora de Lima.
 
-El análisis y el plan por fases están en [`docs/fase-1-analisis-y-plan.md`](docs/fase-1-analisis-y-plan.md). Para producción, ver [`docs/despliegue-contabo.md`](docs/despliegue-contabo.md).
+El análisis y el plan por fases están en [`docs/fase-1-analisis-y-plan.md`](docs/fase-1-analisis-y-plan.md). Para producción, ver el runbook [`deploy/runbook-despliegue.md`](deploy/runbook-despliegue.md) (servidor de Contabo) y la guía general [`docs/despliegue-contabo.md`](docs/despliegue-contabo.md).
 
 ## Estructura
 

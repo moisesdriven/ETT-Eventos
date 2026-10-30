@@ -12,7 +12,7 @@ Assert-Fecha 'Hasta' $Hasta
 Write-Paso "Encolando carga histórica del $Desde al $Hasta (días de Lima)"
 $script = @'
 set -euo pipefail
-cd ~/__CARPETA__
+cd __CARPETA__
 docker compose exec -T worker node_modules/.bin/tsx src/cli.ts backfill __DESDE__ __HASTA__ </dev/null
 '@
 Invoke-Remoto $script.Replace('__DESDE__', $Desde).Replace('__HASTA__', $Hasta)

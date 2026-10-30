@@ -4,7 +4,7 @@
 Write-Paso "Actualizando $Destino a la última versión de '$Rama'"
 $script = @'
 set -euo pipefail
-cd ~/__CARPETA__
+cd __CARPETA__
 git fetch origin
 git checkout '__RAMA__'
 git pull --ff-only origin '__RAMA__'

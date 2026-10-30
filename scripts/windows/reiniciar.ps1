@@ -11,7 +11,7 @@ Write-Paso "Reiniciando $servicios"
 # up -d (no restart) para que tome los cambios del .env.
 $script = @'
 set -euo pipefail
-cd ~/__CARPETA__
+cd __CARPETA__
 docker compose up -d --force-recreate __SERVICIOS__ </dev/null
 docker compose ps
 '@

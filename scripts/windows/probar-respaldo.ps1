@@ -4,7 +4,7 @@
 Write-Paso 'Probando el último respaldo'
 Invoke-Remoto @'
 set -euo pipefail
-cd ~/__CARPETA__
+cd __CARPETA__
 ultimo=$(ls -1t backups/*.dump 2>/dev/null | head -n 1 || true)
 if [ -z "$ultimo" ]; then echo 'No hay respaldos todavía.'; exit 1; fi
 echo "Respaldo: $ultimo"

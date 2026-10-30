@@ -1,10 +1,12 @@
 # Scripts de PowerShell para el servidor (Contabo)
 
+Hacen lo mismo que el runbook [`deploy/runbook-despliegue.md`](../../deploy/runbook-despliegue.md), pero sin pegar comandos en el servidor. Usa uno u otro.
+
 Se ejecutan **en tu PC con Windows**, desde PowerShell. Cada script se conecta al servidor por SSH y hace el trabajo allí. Funcionan con Windows PowerShell 5.1 (el que trae Windows) y con PowerShell 7.
 
 ## Antes de empezar
 
-1. Fusiona el pull request en `main` (los scripts despliegan esa rama; se cambia en `config.ps1`).
+1. `config.ejemplo.ps1` ya trae los datos del servidor de Contabo (`144.91.106.148`, carpeta `/opt/ett-eventos`, rama actual del proyecto). Cuando el pull request se fusione, cambia `$Rama` a `main`.
 2. Descarga el repositorio en tu PC (con `git clone` o el botón «Download ZIP» de GitHub) y abre PowerShell en esta carpeta, `scripts\windows`.
 3. Si descargaste el ZIP, desbloquea los scripts una vez:
 
@@ -18,7 +20,7 @@ Get-ChildItem *.ps1 | Unblock-File
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-5. Crea tu configuración y completa la IP del servidor:
+5. Crea tu configuración (revisa que la IP y el usuario sean los correctos):
 
 ```powershell
 Copy-Item config.ejemplo.ps1 config.ps1

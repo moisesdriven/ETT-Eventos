@@ -13,10 +13,6 @@ if (-not (Test-Path $configPath)) {
     exit 1
 }
 . $configPath
-if ($Servidor -eq 'IP_DEL_SERVIDOR') {
-    Write-Host 'Completa $Servidor en config.ps1 con la IP de tu VPS.' -ForegroundColor Red
-    exit 1
-}
 $Destino = "$Usuario@$Servidor"
 
 function Write-Paso([string]$Texto) {

@@ -11,4 +11,4 @@ param(
 )
 . (Join-Path $PSScriptRoot 'comun.ps1')
 $seguir = if ($EnVivo) { ' -f' } else { '' }
-Invoke-RemotoInteractivo "cd ~/$Carpeta && docker compose logs --tail=$Lineas$seguir $Servicio"
+Invoke-RemotoInteractivo "cd $Carpeta && docker compose logs --tail=$Lineas$seguir $Servicio"

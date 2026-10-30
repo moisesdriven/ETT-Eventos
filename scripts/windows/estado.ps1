@@ -3,7 +3,7 @@
 Write-Paso "Estado en $Destino"
 Invoke-Remoto @'
 set -euo pipefail
-cd ~/__CARPETA__
+cd __CARPETA__
 docker compose ps
 echo
 docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -P pager=off' <<'SQL'

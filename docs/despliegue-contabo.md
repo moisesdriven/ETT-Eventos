@@ -11,6 +11,10 @@ Todo se hace desde **PowerShell en tu PC con Windows**. Hay dos tipos de bloques
 
 En los ejemplos, reemplaza `IP_DEL_SERVIDOR` por la IP de tu VPS de Contabo y `root` por tu usuario si usas otro.
 
+> **Servidor de producción (144.91.106.148, `ett-eventos.drivenbox.drivenautomations.com`):** sigue el runbook
+> [`deploy/runbook-despliegue.md`](../deploy/runbook-despliegue.md), que ya trae los valores de ese servidor
+> (red `web` de Traefik, carpeta `/opt/ett-eventos`). Esta guía es la referencia general.
+
 ## Opción recomendada: scripts de PowerShell
 
 En `scripts/windows` hay scripts que hacen toda la instalación y la operación desde tu PC sin escribir comandos en el servidor: `01-configurar-llave-ssh.ps1`, `02-instalar.ps1`, `03-crear-admin.ps1`, `04-carga-historica.ps1`, y para el día a día `estado.ps1`, `logs.ps1`, `actualizar.ps1`, `conciliar.ps1`, `descargar-respaldos.ps1`, entre otros. Las instrucciones están en [`scripts/windows/LEEME.md`](../scripts/windows/LEEME.md).

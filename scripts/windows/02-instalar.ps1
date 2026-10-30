@@ -3,9 +3,9 @@
 . (Join-Path $PSScriptRoot 'comun.ps1')
 
 Write-Paso 'Datos del despliegue'
-$dominio = Read-Valor 'Dominio de la app (ej. eventos.tudominio.com)'
+$dominio = Read-Valor 'Dominio de la app' 'ett-eventos.drivenbox.drivenautomations.com'
 Assert-UnaLinea 'Dominio' $dominio
-$redTraefik = Read-Valor 'Red Docker de Traefik' 'traefik'
+$redTraefik = Read-Valor 'Red Docker de Traefik' 'web'
 $entrypoint = Read-Valor 'Entrypoint HTTPS de Traefik' 'websecure'
 $certresolver = Read-Valor 'Certresolver de Traefik' 'letsencrypt'
 Assert-UnaLinea 'Red de Traefik' $redTraefik
@@ -13,7 +13,7 @@ Assert-UnaLinea 'Entrypoint' $entrypoint
 Assert-UnaLinea 'Certresolver' $certresolver
 
 Write-Host ''
-Write-Host 'Repositorio privado: usuario de GitHub y token de solo lectura (Enter para omitir si el repositorio es público).'
+Write-Host 'El repositorio es público: deja el usuario de GitHub vacío (Enter). Solo hace falta si pasa a privado.'
 $ghUsuario = Read-Valor 'Usuario de GitHub'
 $ghToken = ''
 if ($ghUsuario) { $ghToken = Read-Secreto 'Token de GitHub (no se muestra)' }
@@ -61,14 +61,14 @@ if [ -n '__GHUSER__' ]; then
 fi
 
 echo '--> Código'
-if [ -d ~/__CARPETA__/.git ]; then
-  cd ~/__CARPETA__
+if [ -d __CARPETA__/.git ]; then
+  cd __CARPETA__
   git fetch origin
   git checkout '__RAMA__'
   git pull --ff-only origin '__RAMA__'
 else
-  git clone --branch '__RAMA__' '__REPO__' ~/__CARPETA__
-  cd ~/__CARPETA__
+  git clone --branch '__RAMA__' '__REPO__' __CARPETA__
+  cd __CARPETA__
 fi
 if [ ! -f docker-compose.yml ]; then
   echo "ERROR: la rama '__RAMA__' no contiene el proyecto (falta docker-compose.yml)."
