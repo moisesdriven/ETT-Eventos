@@ -3,9 +3,10 @@ import { z } from "zod";
 export const env = z
   .object({
     DATABASE_URL: z.string().url(),
-    GHL_AGENCY_TOKEN: z.string().min(10, "Falta GHL_AGENCY_TOKEN"),
-    GHL_LOCATION_TOKEN: z.string().min(10, "Falta GHL_LOCATION_TOKEN"),
-    GHL_LOCATION_ID: z.string().min(5, "Falta GHL_LOCATION_ID"),
+    // trim: tolera espacios o saltos de línea de Windows (CRLF) pegados al valor.
+    GHL_AGENCY_TOKEN: z.string().trim().min(10, "Falta GHL_AGENCY_TOKEN"),
+    GHL_LOCATION_TOKEN: z.string().trim().min(10, "Falta GHL_LOCATION_TOKEN"),
+    GHL_LOCATION_ID: z.string().trim().min(5, "Falta GHL_LOCATION_ID"),
     /** Opcional: si no se define se toma de la subcuenta. */
     GHL_COMPANY_ID: z
       .string()

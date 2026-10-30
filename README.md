@@ -62,6 +62,38 @@ pnpm dev                         # http://localhost:3000
 
 Los scripts leen las variables del entorno; para usar el archivo `.env`, cárgalo antes (por ejemplo `set -a; . ./.env; set +a`).
 
+### En Windows con PowerShell
+
+```powershell
+Copy-Item .env.example .env
+```
+
+```powershell
+docker compose -f docker-compose.dev.yml up -d
+```
+
+```powershell
+pnpm install
+```
+
+```powershell
+$env:DATABASE_URL = "postgres://ett:ett@localhost:5432/ett"
+```
+
+```powershell
+pnpm db:migrate
+```
+
+```powershell
+$env:ADMIN_EMAIL = "tu@correo.com"; $env:ADMIN_PASSWORD = "una-clave-larga"; pnpm db:create-admin
+```
+
+```powershell
+pnpm dev
+```
+
+Las variables definidas con `$env:` duran mientras la ventana de PowerShell esté abierta. Para producción, la guía [`docs/despliegue-contabo.md`](docs/despliegue-contabo.md) está escrita para PowerShell.
+
 ## Comandos
 
 | Comando | Qué hace |
