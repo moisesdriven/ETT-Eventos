@@ -48,6 +48,7 @@ services:
     environment:
       DATABASE_URL: *db-url
       APP_URL: https://${APP_DOMAIN:?Define APP_DOMAIN}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
     depends_on:
       migrate: { condition: service_completed_successfully }
     networks: [internal, traefik]

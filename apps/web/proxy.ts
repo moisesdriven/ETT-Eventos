@@ -16,5 +16,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|api/health).*)"],
+  // api/webhooks se protege con su propia clave (GHL no tiene sesión).
+  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|api/health|api/webhooks).*)"],
 };

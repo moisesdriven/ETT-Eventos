@@ -18,13 +18,27 @@ function displayName(c: GhlContact): string | null {
   return full || c.contactName || null;
 }
 
+/** Margen para considerar «exacta» la hora de un aviso de GHL (el workflow tarda unos segundos). */
+const WEBHOOK_MARGIN_MS = 2 * 60 * 1000;
+
+export interface SnapshotOptions {
+  /**
+   * "webhook": la foto llega por un aviso de GHL disparado por un cambio de etiqueta.
+   * Si el cambio es uno solo, su hora se registra como exacta (± 2 min); si el contacto
+   * es nuevo y se creó junto con el aviso, sus etiquetas también.
+   */
+  source?: "snapshot" | "webhook";
+}
+
 /**
  * Guarda la foto actual de un contacto. Si ya teníamos una foto anterior, las
  * diferencias de etiquetas se registran en el historial con sus cotas de tiempo
  * (GHL no informa cuándo se aplicó cada etiqueta).
  */
-export async function saveContactSnapshot(ctx: Ctx, contact: GhlContact, observedAt = new Date()) {
+export async function saveContactSnapshot(ctx: Ctx, contact: GhlContact, observedAt = new Date(), options: SnapshotOptions = {}) {
   const tags = [...new Set((contact.tags ?? []).map(normalizeTag))].sort();
+  const source = options.source ?? "snapshot";
+  const exacta = new Date(observedAt.getTime() - WEBHOOK_MARGIN_MS);
   await ctx.db.transaction(async (tx) => {
     const [prev] = await tx
       .select({ tags: contactsCache.tags, syncedAt: contactsCache.syncedAt })
@@ -32,11 +46,52 @@ export async function saveContactSnapshot(ctx: Ctx, contact: GhlContact, observe
       .where(and(eq(contactsCache.locationId, ctx.locationId), eq(contactsCache.contactId, contact.id)))
       .for("update");
 
+    if (prev && prev.syncedAt >= observedAt) {
+      // Aviso atrasado: no pisa la foto más reciente, pero sí acota el historial. En el
+      // momento del aviso, las etiquetas que traía estaban puestas y las demás no.
+      if (source === "webhook") {
+        const presentes = new Set(tags);
+        const filas = await tx
+          .select()
+          .from(contactTagHistory)
+          .where(and(eq(contactTagHistory.locationId, ctx.locationId), eq(contactTagHistory.contactId, contact.id)));
+        for (const h of filas) {
+          if (presentes.has(h.tagNameNormalized) && h.addedAt && h.addedAt > observedAt && (!h.addedAfter || h.addedAfter < observedAt)) {
+            await tx.update(contactTagHistory).set({ addedAt: observedAt }).where(eq(contactTagHistory.id, h.id));
+          }
+          if (!presentes.has(h.tagNameNormalized) && h.removedAt && h.removedAt > observedAt && (!h.removedAfter || h.removedAfter < observedAt)) {
+            await tx.update(contactTagHistory).set({ removedAt: observedAt }).where(eq(contactTagHistory.id, h.id));
+          }
+        }
+      }
+      return;
+    }
+
+    if (!prev && source === "webhook" && contact.dateAdded) {
+      // Contacto nuevo creado junto con el aviso (típico de un anuncio): sus etiquetas son de ahora.
+      const creado = new Date(contact.dateAdded);
+      if (observedAt.getTime() - creado.getTime() <= 15 * 60 * 1000 && tags.length) {
+        await tx.insert(contactTagHistory).values(
+          tags.map((tag) => ({
+            locationId: ctx.locationId,
+            contactId: contact.id,
+            tagNameNormalized: tag,
+            addedAt: observedAt,
+            addedAfter: new Date(creado.getTime() - WEBHOOK_MARGIN_MS),
+            source: "webhook" as const,
+          })),
+        );
+      }
+    }
+
     if (prev) {
       const before = new Set(prev.tags);
       const after = new Set(tags);
       const added = tags.filter((t) => !before.has(t));
       const removed = prev.tags.filter((t) => !after.has(t));
+      // Con un aviso por cada cambio, un único cambio ocurrió justo antes de recibirlo.
+      const unSoloCambio = source === "webhook" && added.length + removed.length === 1;
+      const desde = unSoloCambio ? exacta : prev.syncedAt;
       if (added.length) {
         await tx.insert(contactTagHistory).values(
           added.map((tag) => ({
@@ -44,15 +99,15 @@ export async function saveContactSnapshot(ctx: Ctx, contact: GhlContact, observe
             contactId: contact.id,
             tagNameNormalized: tag,
             addedAt: observedAt,
-            addedAfter: prev.syncedAt,
-            source: "snapshot" as const,
+            addedAfter: desde,
+            source,
           })),
         );
       }
       for (const tag of removed) {
         const updated = await tx
           .update(contactTagHistory)
-          .set({ removedAt: observedAt, removedAfter: prev.syncedAt })
+          .set({ removedAt: observedAt, removedAfter: desde })
           .where(
             and(
               eq(contactTagHistory.locationId, ctx.locationId),
@@ -68,8 +123,8 @@ export async function saveContactSnapshot(ctx: Ctx, contact: GhlContact, observe
             contactId: contact.id,
             tagNameNormalized: tag,
             removedAt: observedAt,
-            removedAfter: prev.syncedAt,
-            source: "snapshot",
+            removedAfter: desde,
+            source,
           });
         }
       }

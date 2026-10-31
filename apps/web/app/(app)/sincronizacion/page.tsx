@@ -2,12 +2,14 @@ import { addDays, toLimaDay } from "@ett/core";
 import { SYNC_KIND_LABELS, syncRuns, users, type SyncKind } from "@ett/db";
 import { desc, eq, sql } from "drizzle-orm";
 import type { Metadata } from "next";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { getEnv } from "@/lib/env";
 import { formatDay, windowDays } from "@/lib/dates";
 import { getLocation } from "@/lib/location";
 import { formatDateTimeLima } from "@/lib/utils";
@@ -75,6 +77,14 @@ export default async function SyncPage() {
            count(*) FILTER (WHERE resolution = 'pendiente')::int AS pendientes
       FROM analytics.message_charges`);
   const lastOk = runs.find((r) => r.kind === "incremental" && r.status === "ok");
+  const [avisos] = await db.execute<{ ultimo: Date | null; dia: number; errores: number; pendientes: number }>(sql`
+    SELECT max(received_at) AS ultimo,
+           count(*) FILTER (WHERE received_at > now() - interval '24 hours')::int AS dia,
+           count(*) FILTER (WHERE error IS NOT NULL AND received_at > now() - interval '24 hours')::int AS errores,
+           count(*) FILTER (WHERE processed_at IS NULL)::int AS pendientes
+      FROM analytics.webhook_events`);
+  const env = getEnv();
+  const webhookUrl = env.WEBHOOK_SECRET ? `${env.APP_URL.replace(/\/$/, "")}/api/webhooks/ghl?token=${env.WEBHOOK_SECRET}` : null;
   const today = toLimaDay(new Date());
 
   return (
@@ -103,6 +113,35 @@ export default async function SyncPage() {
           <div className="mt-1 font-medium">{formatDateTimeLima(lastOk?.finishedAt)}</div>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Avisos de etiquetas desde GHL</CardTitle>
+          <CardDescription>
+            Un workflow de GHL avisa cada vez que se agrega o quita una etiqueta; así se registra la hora exacta en que cada contacto entró a un
+            evento y el gasto se atribuye desde ese momento.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          {webhookUrl ? (
+            <>
+              <div>
+                <div className="text-xs font-medium uppercase text-muted-foreground">URL para la acción «Webhook» del workflow (POST)</div>
+                <code className="mt-1 block break-all rounded-md border bg-muted/40 px-3 py-2 text-xs">{webhookUrl}</code>
+                <p className="mt-1 text-xs text-muted-foreground">Contiene la clave secreta: no la compartas fuera del workflow.</p>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-1">
+                <span>Último aviso: <strong>{formatDateTimeLima(avisos?.ultimo ?? null)}</strong></span>
+                <span>Últimas 24 h: <strong>{(avisos?.dia ?? 0).toLocaleString("es-PE")}</strong></span>
+                <span>Con error: <strong>{avisos?.errores ?? 0}</strong></span>
+                <span>Pendientes: <strong>{avisos?.pendientes ?? 0}</strong></span>
+              </div>
+            </>
+          ) : (
+            <Alert>Falta <code>WEBHOOK_SECRET</code> en el <code>.env</code> del servidor: los avisos están desactivados.</Alert>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card>

@@ -11,6 +11,7 @@ import { reconcile } from "./steps/reconcile";
 import { repairUnresolved } from "./steps/repair";
 import { resolveCharges } from "./steps/resolve";
 import { syncWallet } from "./steps/wallet";
+import { processWebhooks } from "./steps/webhooks";
 
 const HOUR = 60 * 60 * 1000;
 type Stats = Record<string, unknown>;
@@ -57,6 +58,8 @@ async function runChunked(ctx: Ctx, run: SyncRun, from: Date, to: Date, days: nu
   const parts = chunks(from, to, days);
   const acc: Stats = { tramos: parts.length };
   for (const [i, [a, b]] of parts.entries()) {
+    // Entre tramos se atienden los avisos de etiquetas para no perder su hora exacta.
+    await processWebhooks(ctx);
     sumStats(acc, await syncRange(ctx, a, b));
     acc.tramosCompletados = i + 1;
     await updateSyncRunStats(ctx.db, run.id, acc);

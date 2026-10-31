@@ -3,6 +3,7 @@ import { createContext } from "./context";
 import { runJob } from "./jobs";
 import { log } from "./log";
 import { scheduleDueJobs } from "./scheduler";
+import { processWebhooks } from "./steps/webhooks";
 
 const POLL_MS = 5_000;
 
@@ -27,6 +28,8 @@ log("info", "Worker iniciado");
 while (!stopping) {
   try {
     await scheduleDueJobs(ctx);
+    // Los avisos de etiquetas se procesan antes que los trabajos largos para no atrasarse.
+    await processWebhooks(ctx);
     const run = await claimNextSyncRun(ctx.db);
     if (!run) {
       await new Promise((r) => setTimeout(r, POLL_MS));

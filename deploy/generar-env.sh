@@ -53,6 +53,7 @@ done
 
 # 40 caracteres alfanuméricos aleatorios.
 PG_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)
+WEBHOOK_SECRET=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)
 
 umask 077
 cat > "$ENV" <<FIN
@@ -65,6 +66,7 @@ POSTGRES_USER=ett
 POSTGRES_PASSWORD=$PG_PASSWORD
 POSTGRES_DB=ett
 BACKUP_KEEP_DAYS=14
+WEBHOOK_SECRET=$WEBHOOK_SECRET
 GHL_AGENCY_TOKEN=$GHL_AGENCIA
 GHL_LOCATION_TOKEN=$GHL_SUBCUENTA
 GHL_LOCATION_ID=$GHL_LOCATION

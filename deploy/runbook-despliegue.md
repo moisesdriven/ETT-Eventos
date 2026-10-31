@@ -132,6 +132,34 @@ New-Item -ItemType Directory -Force -Path C:\Respaldos\ett-eventos | Out-Null; s
 
 Guardar también una copia segura de `/opt/ett-eventos/.env` (tiene la contraseña de la base y los tokens).
 
+## Avisos de etiquetas desde GHL (atribución exacta)
+
+Un workflow de GHL avisa al sistema cada vez que se agrega o quita una etiqueta. Así se registra la hora exacta
+en que cada contacto entró a un evento, y el gasto se atribuye solo desde ese momento (base «Historial» en el
+detalle del evento). Aplica desde que se activa; lo anterior sigue usando el rango de fechas del evento.
+
+1. Clave en el `.env` (si el `.env` se creó antes de esta versión):
+
+```bash
+grep -q '^WEBHOOK_SECRET=.\+' /opt/ett-eventos/.env || { sed -i '/^WEBHOOK_SECRET=$/d' /opt/ett-eventos/.env; echo "WEBHOOK_SECRET=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)" >> /opt/ett-eventos/.env; }
+```
+
+2. Aplicar (crea la tabla de avisos):
+
+```bash
+cd /opt/ett-eventos && git pull && docker compose up -d --build && docker compose ps
+```
+
+3. Copiar la URL desde **Sincronización → Avisos de etiquetas desde GHL**.
+4. En GHL (subcuenta ETT) → **Automation → Workflows → Create Workflow → Start from scratch**:
+   - **Triggers**: agregar «Contact Tag» con filtro *Tag Added* y otro «Contact Tag» con filtro *Tag Removed*
+     (sin elegir una etiqueta, para que avise de todas).
+   - **Acción**: «Webhook», método **POST**, URL = la copiada en el paso 3. No hace falta agregar datos.
+   - **Settings**: activar **Allow re-entry** (para que avise en cada cambio, no solo la primera vez).
+   - **Publish**.
+5. Verificar: poner y quitar una etiqueta de prueba a un contacto; en **Sincronización** deben subir «Últimas 24 h»
+   y «Último aviso».
+
 ## Cobros sin cruzar («Sin número»)
 
 La API de exportación de mensajes de GHL a veces responde 0 mensajes sin error. El worker verifica cada día y

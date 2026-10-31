@@ -349,3 +349,25 @@ export const syncRuns = analytics.table(
   },
   (t) => [index("sync_runs_kind_created_idx").on(t.kind, t.createdAt), index("sync_runs_status_idx").on(t.status, t.id)],
 );
+
+// ---------------------------------------------------------------------------
+// Avisos de GHL (webhooks de workflows)
+// ---------------------------------------------------------------------------
+
+/** Avisos recibidos; el worker los procesa en orden y registra el historial de etiquetas. */
+export const webhookEvents = analytics.table(
+  "webhook_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    kind: text("kind").notNull(),
+    contactId: text("contact_id"),
+    payload: jsonb("payload").notNull(),
+    receivedAt: ts("received_at").notNull().defaultNow(),
+    processedAt: ts("processed_at"),
+    error: text("error"),
+  },
+  (t) => [
+    index("webhook_events_pending_idx").on(t.id).where(sql`${t.processedAt} IS NULL`),
+    index("webhook_events_received_idx").on(t.receivedAt),
+  ],
+);
