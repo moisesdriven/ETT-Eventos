@@ -1,6 +1,6 @@
 # Runbook: despliegue de ETT Eventos en Contabo
 
-Sistema nuevo en **https://ett-eventos.drivenbox.drivenautomations.com** (servidor `144.91.106.148`), en paralelo
+Sistema nuevo en **https://ettgastos.drivenbox.com** (servidor `144.91.106.148`), en paralelo
 a lo que ya corre en ese servidor (drivenbox, driven-conteo, etc.). **No toca nada existente**: trae su propio
 PostgreSQL en un volumen propio, no usa `drivenbox-db`, no publica puertos y solo se une a la red `web` de Traefik
 para recibir su dominio.
@@ -30,11 +30,11 @@ ssh root@144.91.106.148
 
 ## 1. DNS (antes de levantar, para que Let's Encrypt emita el certificado)
 
-Crear el registro `A` de `ett-eventos.drivenbox.drivenautomations.com` → `144.91.106.148` en el proveedor DNS y
+Crear el registro `A` de `ettgastos.drivenbox.com` → `144.91.106.148` en el proveedor DNS y
 verificar desde el servidor:
 
 ```bash
-getent hosts ett-eventos.drivenbox.drivenautomations.com
+getent hosts ettgastos.drivenbox.com
 ```
 
 Debe responder `144.91.106.148`. Si no responde, esperar la propagación antes del paso 5 (con el HTTP challenge,
@@ -90,7 +90,7 @@ Esperado: `db` y `web` en `healthy`, `worker` y `backup` en `running`, `migrate`
 cd /opt/ett-eventos && docker compose run --rm -e ADMIN_EMAIL=TU_CORREO -e ADMIN_PASSWORD='UNA-CLAVE-DE-12-O-MAS' migrate node_modules/.bin/tsx src/scripts/create-admin.ts
 ```
 
-Abrir https://ett-eventos.drivenbox.drivenautomations.com e ingresar. Después, desde **Usuarios**, crear las cuentas
+Abrir https://ettgastos.drivenbox.com e ingresar. Después, desde **Usuarios**, crear las cuentas
 del equipo con su rol (Administrador, Analista o Solo lectura).
 
 > Para que la contraseña no quede en el historial del servidor, ejecuta antes `HISTCONTROL=ignorespace` y empieza

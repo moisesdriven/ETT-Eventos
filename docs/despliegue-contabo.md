@@ -11,7 +11,7 @@ Todo se hace desde **PowerShell en tu PC con Windows**. Hay dos tipos de bloques
 
 En los ejemplos, reemplaza `IP_DEL_SERVIDOR` por la IP de tu VPS de Contabo y `root` por tu usuario si usas otro.
 
-> **Servidor de producción (144.91.106.148, `ett-eventos.drivenbox.drivenautomations.com`):** sigue el runbook
+> **Servidor de producción (144.91.106.148, `ettgastos.drivenbox.com`):** sigue el runbook
 > [`deploy/runbook-despliegue.md`](../deploy/runbook-despliegue.md), que ya trae los valores de ese servidor
 > (red `web` de Traefik, carpeta `/opt/ett-eventos`). Esta guía es la referencia general.
 

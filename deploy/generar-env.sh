@@ -30,7 +30,7 @@ leer() {
 }
 
 echo 'Datos del despliegue (Enter acepta el valor entre corchetes).'
-DOMINIO=$(leer 'Dominio' 'ett-eventos.drivenbox.drivenautomations.com')
+DOMINIO=$(leer 'Dominio' 'ettgastos.drivenbox.com')
 RED=$(leer 'Red Docker de Traefik' 'web')
 ENTRYPOINT=$(leer 'Entrypoint HTTPS' 'websecure')
 RESOLVER=$(leer 'Certresolver' 'letsencrypt')

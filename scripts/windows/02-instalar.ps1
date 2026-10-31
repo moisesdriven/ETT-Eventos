@@ -3,7 +3,7 @@
 . (Join-Path $PSScriptRoot 'comun.ps1')
 
 Write-Paso 'Datos del despliegue'
-$dominio = Read-Valor 'Dominio de la app' 'ett-eventos.drivenbox.drivenautomations.com'
+$dominio = Read-Valor 'Dominio de la app' 'ettgastos.drivenbox.com'
 Assert-UnaLinea 'Dominio' $dominio
 $redTraefik = Read-Valor 'Red Docker de Traefik' 'web'
 $entrypoint = Read-Valor 'Entrypoint HTTPS de Traefik' 'websecure'
