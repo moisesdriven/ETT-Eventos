@@ -26,7 +26,7 @@ export async function scheduleDueJobs(ctx: Ctx, now = new Date()) {
   const dailyAt = new Date(limaDayStart(today).getTime() + env.DAILY_JOBS_HOUR_LIMA * 3_600_000);
   if (now < dailyAt) return;
 
-  for (const kind of ["catalogo", "conciliacion"] as const) {
+  for (const kind of ["catalogo", "conciliacion", "reparacion"] as const) {
     const [doneToday] = await ctx.db
       .select({ id: syncRuns.id })
       .from(syncRuns)

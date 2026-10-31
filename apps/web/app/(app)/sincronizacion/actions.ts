@@ -45,7 +45,7 @@ export async function enqueueRangeAction(_prev: ActionState, formData: FormData)
 
 export async function enqueueSimpleAction(formData: FormData) {
   const { user, location } = await requireAdmin();
-  const kind = z.enum(["incremental", "catalogo"]).parse(formData.get("kind"));
+  const kind = z.enum(["incremental", "catalogo", "reparacion"]).parse(formData.get("kind"));
   const run = await enqueueSyncRun(db, { kind, locationId: location?.id ?? null, requestedBy: user.id, dedupe: true });
   await audit({ userId: user.id, action: `sincronizacion.${kind}`, entity: "sync_run", entityId: String(run.id) });
   revalidatePath("/sincronizacion");

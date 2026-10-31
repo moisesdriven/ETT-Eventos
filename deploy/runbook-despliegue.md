@@ -132,6 +132,16 @@ New-Item -ItemType Directory -Force -Path C:\Respaldos\ett-eventos | Out-Null; s
 
 Guardar también una copia segura de `/opt/ett-eventos/.env` (tiene la contraseña de la base y los tokens).
 
+## Cobros sin cruzar («Sin número»)
+
+La API de exportación de mensajes de GHL a veces responde 0 mensajes sin error. El worker verifica cada día y
+reintenta; además, una reparación diaria vuelve a descargar los días con cobros sin cruzar. Para lanzarla a mano
+(también desde **Sincronización → Reparar cobros sin cruzar**):
+
+```bash
+cd /opt/ett-eventos && docker compose exec -T worker node_modules/.bin/tsx src/cli.ts reparacion
+```
+
 ## Actualizaciones
 
 ```bash

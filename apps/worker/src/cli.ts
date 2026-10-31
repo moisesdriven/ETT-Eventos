@@ -6,6 +6,7 @@ import { createDb, enqueueSyncRun, SYNC_KINDS, type SyncKind } from "@ett/db";
  *   pnpm --filter @ett/worker enqueue backfill 2026-01-01 2026-10-31
  *   pnpm --filter @ett/worker enqueue catalogo
  *   pnpm --filter @ett/worker enqueue conciliacion 2026-10-01 2026-10-31
+ *   pnpm --filter @ett/worker enqueue reparacion            (todos los días con cobros sin cruzar)
  * Las fechas son días de Lima, inclusive.
  */
 const [kind, fromDay, toDay] = process.argv.slice(2);

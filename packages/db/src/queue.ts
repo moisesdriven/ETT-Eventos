@@ -7,7 +7,7 @@ import { syncRuns } from "./schema";
  * sincronización visible en la app. Un solo worker toma trabajos con
  * FOR UPDATE SKIP LOCKED.
  */
-export const SYNC_KINDS = ["incremental", "backfill", "catalogo", "evento", "conciliacion"] as const;
+export const SYNC_KINDS = ["incremental", "backfill", "catalogo", "evento", "conciliacion", "reparacion"] as const;
 export type SyncKind = (typeof SYNC_KINDS)[number];
 
 export const SYNC_KIND_LABELS: Record<SyncKind, string> = {
@@ -16,6 +16,7 @@ export const SYNC_KIND_LABELS: Record<SyncKind, string> = {
   catalogo: "Catálogo de etiquetas y contactos",
   evento: "Cálculo de evento",
   conciliacion: "Conciliación con el monedero",
+  reparacion: "Reparación de cobros sin cruzar",
 };
 
 export type SyncRun = typeof syncRuns.$inferSelect;

@@ -8,6 +8,7 @@ import { syncCatalog } from "./steps/catalog";
 import { syncContactsWithTags, syncMissingContacts } from "./steps/contacts";
 import { syncMessages } from "./steps/messages";
 import { reconcile } from "./steps/reconcile";
+import { repairUnresolved } from "./steps/repair";
 import { resolveCharges } from "./steps/resolve";
 import { syncWallet } from "./steps/wallet";
 
@@ -72,8 +73,12 @@ export async function runJob(ctx: Ctx, run: SyncRun): Promise<Stats> {
     }
     case "backfill": {
       const [from, to] = requireRange(run);
-      return runChunked(ctx, run, from, to, 7);
+      const stats = await runChunked(ctx, run, from, to, 7);
+      // Reintenta los días en que GHL respondió sin mensajes.
+      return { ...stats, reparacion: await repairUnresolved(ctx, from, to) };
     }
+    case "reparacion":
+      return repairUnresolved(ctx, run.rangeFrom, run.rangeTo);
     case "catalogo":
       return syncCatalog(ctx);
     case "conciliacion": {

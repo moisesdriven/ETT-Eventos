@@ -38,6 +38,12 @@ function summarize(stats: Record<string, unknown> | null): string {
   add("filasAtribucion", "atribuciones");
   if (typeof stats.diasConDescuadre === "number") parts.push(stats.diasConDescuadre === 0 ? "cuadre exacto" : `${stats.diasConDescuadre} días con descuadre (corregido)`);
   if (typeof stats.tramos === "number") parts.push(`tramo ${stats.tramosCompletados ?? 0}/${stats.tramos}`);
+  const rep = (stats.reparacion as Record<string, unknown> | undefined) ?? (typeof stats.diasReparados === "number" ? stats : undefined);
+  if (rep && typeof rep.diasReparados === "number") {
+    parts.push(`reparación: ${rep.diasReparados} días, sin cruzar ${rep.sinCruzarAntes} → ${rep.sinCruzarDespues}`);
+  }
+  const incompletos = (stats.diasIncompletos as string[] | undefined) ?? ((rep?.diasIncompletos as string[] | undefined) ?? []);
+  if (incompletos.length) parts.push(`⚠ GHL no entregó mensajes de: ${incompletos.slice(0, 5).join(", ")}${incompletos.length > 5 ? "…" : ""}`);
   return parts.join(" · ");
 }
 
@@ -108,6 +114,12 @@ export default async function SyncPage() {
               <input type="hidden" name="kind" value="incremental" />
               <Button variant="outline" className="w-full">
                 Sincronizar ahora (últimas 48 h)
+              </Button>
+            </form>
+            <form action={enqueueSimpleAction}>
+              <input type="hidden" name="kind" value="reparacion" />
+              <Button variant="outline" className="w-full">
+                Reparar cobros sin cruzar
               </Button>
             </form>
             <form action={enqueueSimpleAction}>

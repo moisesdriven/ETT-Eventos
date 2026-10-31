@@ -91,7 +91,11 @@ export function createGhlClient(config: GhlClientConfig, httpOptions: HttpOption
       }
     },
 
-    /** Export de mensajes de WhatsApp por rango (cursor válido 2 min: consumir sin pausas largas). */
+    /**
+     * Export de mensajes de WhatsApp por rango (cursor válido 2 min: consumir sin pausas largas).
+     * Cada página trae `total` (mensajes del rango según GHL) para verificar que llegó todo.
+     * Ojo: GHL a veces responde 0 mensajes sin error; quien llama debe verificar y reintentar.
+     */
     async *whatsappMessages(from: Date, to: Date, pageSize = 500) {
       let cursor: string | undefined;
       for (;;) {
@@ -109,7 +113,7 @@ export function createGhlClient(config: GhlClientConfig, httpOptions: HttpOption
           },
         });
         const page = exportResponse.parse(res);
-        yield page.messages;
+        yield { messages: page.messages, total: page.total ?? null };
         if (!page.nextCursor || page.messages.length === 0) return;
         cursor = page.nextCursor;
       }
