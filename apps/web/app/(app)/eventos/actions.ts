@@ -32,7 +32,7 @@ const eventSchema = z
   .refine((v) => diffDays(v.startDay, v.endDay) >= 0, { path: ["endDay"], message: "La fecha de fin debe ser igual o posterior al inicio" })
   .refine((v) => diffDays(v.startDay, v.endDay) + 1 <= EVENT_MAX_DAYS, {
     path: ["endDay"],
-    message: `La duración máxima es ${EVENT_MAX_DAYS} días, incluido el seguimiento`,
+    message: `El rango puede tener como máximo ${EVENT_MAX_DAYS} días`,
   });
 
 function readForm(formData: FormData) {

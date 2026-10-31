@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, EVENT_MAX_DAYS, formatUnitUsd, formatUsd, type ChargeCategory } from "@ett/core";
+import { CATEGORY_LABELS, diffDays, EVENT_MAX_DAYS, formatUnitUsd, formatUsd, isIsoDay, parseEventTag, type ChargeCategory } from "@ett/core";
 import { syncRuns } from "@ett/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Metadata } from "next";
@@ -24,19 +24,27 @@ import { getTagOptions } from "@/lib/tag-options";
 import { formatDateTimeLima } from "@/lib/utils";
 import { deleteEventAction, recalculateEventAction, updateEventAction } from "../actions";
 import { EventForm } from "../event-form";
+import { TagActivityCard } from "../tag-activity-card";
+import { getTagActivity } from "@/lib/tag-activity";
 
 export const metadata: Metadata = { title: "Detalle de evento" };
 
 const n = (v: number) => v.toLocaleString("es-PE");
 
-export default async function EventDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ creado?: string }> }) {
+export default async function EventDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ creado?: string; desde?: string; hasta?: string }>;
+}) {
   const user = await requirePermission("dashboard.ver");
   const location = await getLocation();
   const { id } = await params;
   if (!location || !/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [event] = await listEventSummaries(location.id, id);
   if (!event) notFound();
-  const { creado } = await searchParams;
+  const { creado, desde, hasta } = await searchParams;
   const canEdit = can(user.role, "eventos.editar");
   const w = windowDays(event.startsAt, event.endsAt);
 
@@ -95,6 +103,11 @@ export default async function EventDetailPage({ params, searchParams }: { params
     granularity: "dia",
   });
   const tagOptions = canEdit ? await getTagOptions(location.id, id) : [];
+  // «Usar este rango» precarga las fechas del formulario de edición.
+  const custom = desde && hasta && isIsoDay(desde) && isIsoDay(hasta) && diffDays(desde, hasta) >= 0;
+  const formFrom = custom ? desde : w.from;
+  const formTo = custom ? hasta : w.to;
+  const activity = canEdit ? await getTagActivity(location.id, event.tags, parseEventTag(event.tags[0] ?? "")?.startDay ?? w.from) : null;
   const billable = event.marketingN + event.utilityN + event.serviceN;
 
   return (
@@ -256,19 +269,25 @@ export default async function EventDetailPage({ params, searchParams }: { params
         </CardContent>
       </Card>
 
+      {activity ? (
+        <TagActivityCard activity={activity} applyHref={(f, t) => `/eventos/${id}?desde=${f}&hasta=${t}#editar`} current={{ from: formFrom, to: formTo }} />
+      ) : null}
+
       {canEdit ? (
-        <Card>
+        <Card id="editar">
           <CardHeader>
             <CardTitle>Editar evento</CardTitle>
             <CardDescription>Al guardar se recalcula el gasto con las nuevas fechas o etiquetas.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            {custom ? <Alert tone="success">Rango sugerido cargado en el formulario. Revisa y pulsa «Guardar cambios».</Alert> : null}
             <EventForm
+              key={`${formFrom}-${formTo}`}
               action={updateEventAction}
               tagOptions={tagOptions}
               maxDays={EVENT_MAX_DAYS}
               submitLabel="Guardar cambios"
-              defaults={{ eventId: id, name: event.name, tags: event.tags, startDay: w.from, endDay: w.to, budgetUsd: event.budgetUsd ? Number(event.budgetUsd).toFixed(2) : "", notes: event.notes ?? "" }}
+              defaults={{ eventId: id, name: event.name, tags: event.tags, startDay: formFrom, endDay: formTo, budgetUsd: event.budgetUsd ? Number(event.budgetUsd).toFixed(2) : "", notes: event.notes ?? "" }}
             />
             <form action={deleteEventAction} className="flex flex-wrap items-center gap-3 border-t pt-4">
               <input type="hidden" name="eventId" value={id} />
