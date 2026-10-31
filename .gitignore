@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+!.env.production.example
+next-env.d.ts
+backups/
+scripts/windows/config.ps1

@@ -1,0 +1,115 @@
+# Producción (Contabo) detrás de Traefik. Uso:
+#   cp .env.production.example .env   # y completar
+#   docker compose up -d --build
+# La base de datos no expone puertos: solo la ven la web, el worker y los respaldos.
+name: ett-eventos
+
+# Host interno único (ett-eventos-db): en un servidor compartido la web también está en la red de
+# Traefik, donde otro proyecto podría tener un servicio llamado "db".
+x-db-url: &db-url postgres://${POSTGRES_USER:-ett}:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}@ett-eventos-db:5432/${POSTGRES_DB:-ett}
+
+services:
+  db:
+    image: postgres:16.10-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ett}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ett}
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      internal:
+        aliases: [ett-eventos-db]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Aplica migraciones pendientes y termina (solo crea; nunca borra datos).
+  migrate:
+    build: { context: ., target: worker }
+    image: ett-eventos-worker:latest
+    working_dir: /repo/packages/db
+    command: ["node_modules/.bin/tsx", "src/scripts/migrate.ts"]
+    environment:
+      DATABASE_URL: *db-url
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [internal]
+    restart: "no"
+
+  web:
+    build: { context: ., target: web }
+    image: ett-eventos-web:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *db-url
+      APP_URL: https://${APP_DOMAIN:?Define APP_DOMAIN}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    networks: [internal, traefik]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
+      - traefik.http.routers.ett-eventos.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.ett-eventos.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.ett-eventos.tls=true
+      - traefik.http.routers.ett-eventos.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.ett-eventos.loadbalancer.server.port=3000
+
+  worker:
+    # Usa la imagen que construye "migrate"; no se descarga de ningún registro.
+    image: ett-eventos-worker:latest
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *db-url
+      GHL_AGENCY_TOKEN: ${GHL_AGENCY_TOKEN:?Define GHL_AGENCY_TOKEN}
+      GHL_LOCATION_TOKEN: ${GHL_LOCATION_TOKEN:?Define GHL_LOCATION_TOKEN}
+      GHL_LOCATION_ID: ${GHL_LOCATION_ID:?Define GHL_LOCATION_ID}
+      GHL_COMPANY_ID: ${GHL_COMPANY_ID:-}
+      SYNC_INTERVAL_MINUTES: ${SYNC_INTERVAL_MINUTES:-15}
+      DAILY_JOBS_HOUR_LIMA: ${DAILY_JOBS_HOUR_LIMA:-3}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    networks: [internal]
+    stop_grace_period: 2m
+
+  # Respaldo diario comprimido; conserva los últimos BACKUP_KEEP_DAYS días en ./backups.
+  backup:
+    image: postgres:16.10-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: ett-eventos-db
+      PGUSER: ${POSTGRES_USER:-ett}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-ett}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    networks: [internal]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        umask 077
+        while true; do
+          f=/backups/ett-$$(date -u +%Y%m%d-%H%M).dump
+          pg_dump -Fc -f "$$f.tmp" && mv "$$f.tmp" "$$f" && echo "Respaldo $$f"
+          find /backups -name 'ett-*.dump' -mtime +$${BACKUP_KEEP_DAYS} -delete
+          sleep 86400
+        done
+
+networks:
+  internal: {}
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
+
+volumes:
+  pgdata:
