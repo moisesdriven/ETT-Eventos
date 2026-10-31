@@ -61,7 +61,9 @@ services:
       - traefik.http.services.ett-eventos.loadbalancer.server.port=3000
 
   worker:
+    # Usa la imagen que construye "migrate"; no se descarga de ningún registro.
     image: ett-eventos-worker:latest
+    pull_policy: never
     restart: unless-stopped
     environment:
       DATABASE_URL: *db-url
