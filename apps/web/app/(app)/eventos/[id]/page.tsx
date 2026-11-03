@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, diffDays, EVENT_MAX_DAYS, formatUnitUsd, formatUsd, isIsoDay, parseEventTag, type ChargeCategory } from "@ett/core";
+import { CATEGORY_LABELS, diffDays, EVENT_MAX_DAYS, formatUnitUsd, formatUsd, isIsoDay, parseEventTag, toLimaDay, type ChargeCategory } from "@ett/core";
 import { syncRuns } from "@ett/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Metadata } from "next";
@@ -94,7 +94,7 @@ export default async function EventDetailPage({
 
   const series = await getTimeSeries(location.id, {
     from: w.from,
-    to: w.to,
+    to: w.to ?? toLimaDay(new Date()),
     preset: null,
     month: null,
     phoneId: null,
@@ -106,7 +106,7 @@ export default async function EventDetailPage({
   // «Usar este rango» precarga las fechas del formulario de edición.
   const custom = desde && hasta && isIsoDay(desde) && isIsoDay(hasta) && diffDays(desde, hasta) >= 0;
   const formFrom = custom ? desde : w.from;
-  const formTo = custom ? hasta : w.to;
+  const formTo = custom ? hasta : (w.to ?? "");
   const activity = canEdit ? await getTagActivity(location.id, event.tags, parseEventTag(event.tags[0] ?? "")?.startDay ?? w.from) : null;
   const billable = event.marketingN + event.utilityN + event.serviceN;
 
@@ -119,7 +119,7 @@ export default async function EventDetailPage({
           </Link>
           <h1 className="mt-2 text-2xl font-semibold">{event.name}</h1>
           <p className="text-sm text-muted-foreground">
-            {formatDay(w.from)} – {formatDay(w.to)} · <span className="font-mono">{event.tags.join(", ")}</span>
+            {formatDay(w.from)} – {w.to ? formatDay(w.to) : <Badge tone="info">en curso</Badge>} · <span className="font-mono">{event.tags.join(", ")}</span>
           </p>
         </div>
         {canEdit ? (
@@ -270,7 +270,7 @@ export default async function EventDetailPage({
       </Card>
 
       {activity ? (
-        <TagActivityCard activity={activity} applyHref={(f, t) => `/eventos/${id}?desde=${f}&hasta=${t}#editar`} current={{ from: formFrom, to: formTo }} />
+        <TagActivityCard activity={activity} applyHref={(f, t) => `/eventos/${id}?desde=${f}&hasta=${t}#editar`} current={{ from: formFrom, to: formTo || null }} />
       ) : null}
 
       {canEdit ? (

@@ -113,9 +113,9 @@ export const events = analytics.table(
       .notNull()
       .references(() => locations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    /** Ventana semiabierta [startsAt, endsAt) en UTC; se captura en días de Lima. */
+    /** Ventana semiabierta [startsAt, endsAt) en UTC; se captura en días de Lima. Sin fin = «en curso». */
     startsAt: ts("starts_at").notNull(),
-    endsAt: ts("ends_at").notNull(),
+    endsAt: ts("ends_at"),
     budgetUsd: usd("budget_usd"),
     notes: text("notes"),
     status: eventStatus("status").notNull().default("activo"),
@@ -125,7 +125,7 @@ export const events = analytics.table(
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
   (t) => [
-    check("events_window_chk", sql`${t.endsAt} > ${t.startsAt}`),
+    check("events_window_chk", sql`${t.endsAt} IS NULL OR ${t.endsAt} > ${t.startsAt}`),
     index("events_location_window_idx").on(t.locationId, t.startsAt, t.endsAt),
   ],
 );

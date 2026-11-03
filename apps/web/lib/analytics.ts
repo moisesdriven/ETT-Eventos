@@ -146,7 +146,11 @@ export interface EventSpendRow extends CategoryTotals {
 }
 
 /** Gasto por evento en el periodo (top N) y el orgánico, usando la parte atribuida. */
-export async function getTopEvents(locationId: string, f: Filters, limit = 10): Promise<{ top: EventSpendRow[]; organico: EventSpendRow }> {
+export async function getTopEvents(
+  locationId: string,
+  f: Filters,
+  limit = 10,
+): Promise<{ top: EventSpendRow[]; organico: EventSpendRow; total: number }> {
   const base = { ...f, event: null };
   const rows = await db.execute<Record<string, unknown>>(sql`
     WITH ${filtered(locationId, base)},
@@ -174,7 +178,9 @@ export async function getTopEvents(locationId: string, f: Filters, limit = 10): 
     service: { n: num(r.sv_n), usd: num(r.sv_usd) },
   }));
   const organico = mapped.find((r) => r.eventId === null) ?? { eventId: null, name: "Orgánico / Sin campaña", totalUsd: 0, contactos: 0, ...emptyTotals() };
-  return { top: mapped.filter((r) => r.eventId !== null).slice(0, limit), organico };
+  // Eventos + orgánico = 100 % del gasto del periodo (los cobros compartidos se reparten).
+  const total = mapped.reduce((acc, r) => acc + r.totalUsd, 0);
+  return { top: mapped.filter((r) => r.eventId !== null).slice(0, limit), organico, total };
 }
 
 export async function getFilterOptions(locationId: string) {

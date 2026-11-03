@@ -7,7 +7,7 @@ import { FILTER_CATEGORIES } from "@/lib/filters";
 import type { TagActivity } from "@/lib/tag-activity";
 
 /** Actividad de los contactos con la etiqueta y rango sugerido (enlace que precarga las fechas). */
-export function TagActivityCard({ activity, applyHref, current }: { activity: TagActivity; applyHref: (from: string, to: string) => string; current?: { from: string; to: string } }) {
+export function TagActivityCard({ activity, applyHref, current }: { activity: TagActivity; applyHref: (from: string, to: string) => string; current?: { from: string; to: string | null } }) {
   const s = activity.sugerido;
   const yaAplicado = s && current && s.from === current.from && s.to === current.to;
   return (

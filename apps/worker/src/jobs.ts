@@ -101,9 +101,12 @@ export async function runJob(ctx: Ctx, run: SyncRun): Promise<Stats> {
             .innerJoin(events, eq(events.id, eventTags.eventId))
             .where(eq(events.id, eventId))
         : [];
+      // Los cobros y mensajes ya están en la base (sincronización periódica + reparación diaria):
+      // aquí solo se actualizan los contactos de las etiquetas y se recalcula la atribución.
       const contacts = await syncContactsWithTags(ctx, tagRows.map((r) => r.tag));
-      const synced = await runChunked(ctx, run, from, to, 7);
-      return { ...contacts, ...synced };
+      const missing = await syncMissingContacts(ctx, from, to);
+      const attribution = await recalculateAttributions(ctx, from, to);
+      return { ...contacts, ...missing, ...attribution };
     }
     default:
       throw new Error(`Tipo de trabajo desconocido: ${run.kind}`);

@@ -14,6 +14,12 @@ describe("attributeCharge", () => {
     expect(attributeCharge(charge("2026-10-09T12:00:00Z"), [MEN03], tags("ett"), [])).toEqual([]);
   });
 
+  it("evento en curso (sin fecha de fin): atribuye todo lo posterior al inicio", () => {
+    const enCurso = { ...MEN03, endsAt: null };
+    expect(attributeCharge(charge("2027-03-01T00:00:00Z"), [enCurso], tags("men03-lci-08.10.26"), [])).toHaveLength(1);
+    expect(attributeCharge(charge("2026-10-08T04:59:59Z"), [enCurso], tags("men03-lci-08.10.26"), [])).toEqual([]);
+  });
+
   it("con etiqueta pero fuera de la ventana → orgánico", () => {
     expect(attributeCharge(charge("2026-10-22T05:00:00Z"), [MEN03], tags("men03-lci-08.10.26"), [])).toEqual([]);
     expect(attributeCharge(charge("2026-10-08T04:59:59.999Z"), [MEN03], tags("men03-lci-08.10.26"), [])).toEqual([]);

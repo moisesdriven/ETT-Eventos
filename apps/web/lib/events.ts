@@ -7,7 +7,8 @@ export interface EventSummary {
   name: string;
   status: "activo" | "archivado";
   startsAt: Date;
-  endsAt: Date;
+  /** null = en curso. */
+  endsAt: Date | null;
   tags: string[];
   budgetUsd: string | null;
   notes: string | null;
@@ -71,7 +72,7 @@ export async function listEventSummaries(locationId: string, eventId?: string): 
     name: String(r.name),
     status: r.status as EventSummary["status"],
     startsAt: new Date(r.starts_at as string),
-    endsAt: new Date(r.ends_at as string),
+    endsAt: r.ends_at ? new Date(r.ends_at as string) : null,
     tags: r.tags as string[],
     budgetUsd: (r.budget_usd as string | null) ?? null,
     notes: (r.notes as string | null) ?? null,

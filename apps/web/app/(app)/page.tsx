@@ -139,7 +139,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </CardHeader>
           <CardContent>
             {phones.length ? (
-              <HBarChart data={phones.map((p) => ({ ...p, name: p.label ?? p.phone }))} keys={f.categories} />
+              <HBarChart data={phones.map((p) => ({ ...p, name: p.label ?? p.phone }))} keys={f.categories} total={kpis.totalUsd} />
             ) : (
               <p className="text-sm text-muted-foreground">Sin datos en el periodo.</p>
             )}
@@ -150,11 +150,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <CardTitle>Top 10 eventos por gasto</CardTitle>
             <CardDescription>
               Orgánico / Sin campaña en el periodo: <strong className="text-foreground">{formatUsd(events.organico.totalUsd)}</strong>
+              {events.total > 0 ? ` (${formatPercent(events.organico.totalUsd / events.total)})` : ""}. Los % son sobre el gasto total del periodo
+              ({formatUsd(events.total)}); un cobro compartido por dos eventos se reparte, así que nada se cuenta dos veces.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {events.top.length ? (
-              <HBarChart data={events.top} keys={f.categories} />
+              <HBarChart data={events.top} keys={f.categories} total={events.total} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Ningún evento con gasto en el periodo. <Link href="/eventos" className="text-primary hover:underline">Marca etiquetas como evento</Link>.

@@ -44,8 +44,9 @@ export function EventForm({ action, tagOptions, defaults, maxDays, submitLabel }
           <FieldError errors={state.fieldErrors?.startDay} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="endDay">Fecha de fin, inclusive (máx. {maxDays} días)</Label>
-          <Input id="endDay" name="endDay" type="date" defaultValue={v.endDay} required />
+          <Label htmlFor="endDay">Fecha de fin, inclusive (opcional)</Label>
+          <Input id="endDay" name="endDay" type="date" defaultValue={v.endDay} />
+          <p className="text-xs text-muted-foreground">Déjala vacía mientras la campaña siga activa («en curso»). Máximo {maxDays} días.</p>
           <FieldError errors={state.fieldErrors?.endDay} />
         </div>
         <div className="flex flex-col gap-1.5">

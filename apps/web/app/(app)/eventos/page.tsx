@@ -1,4 +1,4 @@
-import { formatUnitUsd, formatUsd, parseEventTag } from "@ett/core";
+import { formatUnitUsd, formatUsd, parseEventTag, toLimaDay } from "@ett/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -7,23 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Table, Td, Th } from "@/components/ui/table";
 import { can } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
-import { formatDay, windowDays } from "@/lib/dates";
+import { formatDay, formatWindow } from "@/lib/dates";
 import { listEventSummaries } from "@/lib/events";
 import { getLocation } from "@/lib/location";
 import { getTagOptions } from "@/lib/tag-options";
+import { MonthGrid } from "./month-grid";
 
 export const metadata: Metadata = { title: "Etiquetas de evento" };
 
 const n = (v: number) => v.toLocaleString("es-PE");
 
-export default async function EventsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function EventsPage({ searchParams }: { searchParams: Promise<{ q?: string; mes?: string }> }) {
   const user = await requirePermission("dashboard.ver");
   const location = await getLocation();
   if (!location) {
     return <p className="text-sm text-muted-foreground">La subcuenta aún no se ha sincronizado. Inicia el worker para cargar el catálogo de etiquetas.</p>;
   }
   const canEdit = can(user.role, "eventos.editar");
-  const { q = "" } = await searchParams;
+  const { q = "", mes: mesParam } = await searchParams;
+  const mes = mesParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesParam) ? mesParam : toLimaDay(new Date()).slice(0, 7);
   const [summaries, tagOptions] = await Promise.all([listEventSummaries(location.id), getTagOptions(location.id)]);
   const query = q.trim().toLowerCase();
   // Primero las etiquetas con fecha (más recientes arriba), luego el resto en orden alfabético.
@@ -42,10 +44,12 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         </p>
       </div>
 
+      <MonthGrid locationId={location.id} mes={mes} q={q} />
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Eventos ({summaries.length})</CardTitle>
+            <CardTitle>Todos los eventos ({summaries.length})</CardTitle>
             {can(user.role, "datos.exportar") && summaries.length ? (
               <a href="/api/export/eventos" className="text-sm font-medium text-primary hover:underline">
                 Exportar resumen (CSV)
@@ -75,7 +79,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               </thead>
               <tbody>
                 {summaries.map((e) => {
-                  const w = windowDays(e.startsAt, e.endsAt);
                   return (
                     <tr key={e.id}>
                       <Td>
@@ -86,7 +89,8 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                         {!e.lastCalculatedAt ? <Badge tone="info">Calculando…</Badge> : null}
                       </Td>
                       <Td className="whitespace-nowrap">
-                        {formatDay(w.from)} – {formatDay(w.to)}
+                        {formatWindow(e.startsAt, e.endsAt)}
+                        {!e.endsAt ? <div><Badge tone="info">en curso</Badge></div> : null}
                       </Td>
                       <Td className="whitespace-nowrap font-mono text-xs">{e.numeros.join(", ") || "—"}</Td>
                       <Td className="text-right tabular-nums">
@@ -122,6 +126,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <form className="max-w-sm">
+            <input type="hidden" name="mes" value={mes} />
             <Input name="q" defaultValue={q} placeholder="Buscar etiqueta…" aria-label="Buscar etiqueta" />
           </form>
           <Table>

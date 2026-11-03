@@ -110,7 +110,7 @@ export default async function PhonesPage({ searchParams }: { searchParams: Promi
           </Table>
           {phones.length ? (
             <div className="mt-6">
-              <HBarChart data={phones.map((p) => ({ ...p, name: p.label ?? p.phone }))} keys={f.categories} />
+              <HBarChart data={phones.map((p) => ({ ...p, name: p.label ?? p.phone }))} keys={f.categories} total={phones.reduce((a, p) => a + p.totalUsd, 0)} />
             </div>
           ) : null}
         </CardContent>
