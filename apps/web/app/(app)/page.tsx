@@ -9,6 +9,8 @@ import { Stat } from "@/components/stat";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
+import { AllocationTable } from "@/components/allocation/allocation-table";
+import { getMonthAllocation, singleMonth } from "@/lib/allocations";
 import { getByPhone, getFilterOptions, getKpis, getTimeSeries, getTopEvents } from "@/lib/analytics";
 import { can } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
@@ -38,6 +40,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     getFilterOptions(location.id),
   ]);
   const canExport = can(user.role, "datos.exportar");
+  const mesUnico = singleMonth(f);
+  const reparto = mesUnico ? await getMonthAllocation(location.id, mesUnico) : null;
+  const [ry, rm] = (mesUnico ?? "2000-01").split("-").map(Number) as [number, number];
+  const mesLabel = new Intl.DateTimeFormat("es-PE", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(ry, rm - 1, 1)));
   const query = filtersToQuery(f);
   const eventName = f.event === "organico" ? "Orgánico / Sin campaña" : options.events.find((e) => e.id === f.event)?.name;
 
@@ -124,6 +130,33 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               </tbody>
             </Table>
           </details>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Gasto por evento del mes{mesUnico ? ` · ${mesLabel}` : ""}</CardTitle>
+          <CardDescription>
+            Total de cada evento en el mes y el % que representa del gasto total. El % calculado viene como ejemplo: puedes escribir otro reparto y
+            guardarlo; el monto se calcula sobre el total del mes (todos los números y categorías).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!reparto ? (
+            <p className="text-sm text-muted-foreground">Elige un periodo de un solo mes (por ejemplo «Este mes» o «Mes y año») para ver y editar el reparto.</p>
+          ) : reparto.rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Ningún evento tuvo gasto en {mesLabel}.</p>
+          ) : (
+            <AllocationTable
+              key={mesUnico}
+              month={mesUnico!}
+              monthLabel={mesLabel}
+              monthTotal={reparto.total}
+              organicUsd={reparto.organicUsd}
+              rows={reparto.rows}
+              canEdit={can(user.role, "eventos.editar")}
+            />
+          )}
         </CardContent>
       </Card>
 

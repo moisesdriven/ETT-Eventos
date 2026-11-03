@@ -1,4 +1,4 @@
-import { diffDays, EVENT_DEFAULT_DAYS, EVENT_MAX_DAYS, isIsoDay, parseEventTag, toLimaDay } from "@ett/core";
+import { diffDays, EVENT_DEFAULT_DAYS, isIsoDay, parseEventTag, toLimaDay } from "@ett/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +50,7 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
               ? "Fechas tomadas del rango elegido. Puedes ajustarlas."
               : parsed
                 ? `El inicio se tomó de la etiqueta (${preselected}). Deja la fecha de fin vacía si la campaña sigue activa, o usa el rango sugerido si ya terminó (referencia: ${EVENT_DEFAULT_DAYS} días con seguimiento).`
-                : `Elige desde cuándo estuvo activo; la fecha de fin es opcional (máximo ${EVENT_MAX_DAYS} días).`}
+                : "Elige desde cuándo estuvo activo; la fecha de fin es opcional."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,7 +58,6 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
             key={`${startDay}-${endDay}`}
             action={createEventAction}
             tagOptions={options}
-            maxDays={EVENT_MAX_DAYS}
             submitLabel="Guardar y calcular gasto"
             defaults={{ name: "", tags: preselected ? [preselected] : [], startDay, endDay, budgetUsd: "", notes: "" }}
           />

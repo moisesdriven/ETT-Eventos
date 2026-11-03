@@ -16,11 +16,10 @@ interface Props {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   tagOptions: TagOption[];
   defaults: { eventId?: string; name: string; tags: string[]; startDay: string; endDay: string; budgetUsd: string; notes: string };
-  maxDays: number;
   submitLabel: string;
 }
 
-export function EventForm({ action, tagOptions, defaults, maxDays, submitLabel }: Props) {
+export function EventForm({ action, tagOptions, defaults, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set(defaults.tags));
@@ -46,7 +45,7 @@ export function EventForm({ action, tagOptions, defaults, maxDays, submitLabel }
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="endDay">Fecha de fin, inclusive (opcional)</Label>
           <Input id="endDay" name="endDay" type="date" defaultValue={v.endDay} />
-          <p className="text-xs text-muted-foreground">Déjala vacía mientras la campaña siga activa («en curso»). Máximo {maxDays} días.</p>
+          <p className="text-xs text-muted-foreground">Déjala vacía mientras la campaña siga activa («en curso»); el evento puede durar lo que haga falta.</p>
           <FieldError errors={state.fieldErrors?.endDay} />
         </div>
         <div className="flex flex-col gap-1.5">

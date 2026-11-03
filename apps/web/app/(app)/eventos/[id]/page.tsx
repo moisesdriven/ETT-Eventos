@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, diffDays, EVENT_MAX_DAYS, formatUnitUsd, formatUsd, isIsoDay, parseEventTag, toLimaDay, type ChargeCategory } from "@ett/core";
+import { CATEGORY_LABELS, diffDays, formatUnitUsd, formatUsd, isIsoDay, parseEventTag, toLimaDay, type ChargeCategory } from "@ett/core";
 import { syncRuns } from "@ett/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Metadata } from "next";
@@ -282,10 +282,10 @@ export default async function EventDetailPage({
           <CardContent className="flex flex-col gap-6">
             {custom ? <Alert tone="success">Rango sugerido cargado en el formulario. Revisa y pulsa «Guardar cambios».</Alert> : null}
             <EventForm
-              key={`${formFrom}-${formTo}`}
+              // Solo se remonta al aplicar un rango sugerido; tras guardar conserva el mensaje.
+              key={custom ? `${desde}-${hasta}` : "editar"}
               action={updateEventAction}
               tagOptions={tagOptions}
-              maxDays={EVENT_MAX_DAYS}
               submitLabel="Guardar cambios"
               defaults={{ eventId: id, name: event.name, tags: event.tags, startDay: formFrom, endDay: formTo, budgetUsd: event.budgetUsd ? Number(event.budgetUsd).toFixed(2) : "", notes: event.notes ?? "" }}
             />

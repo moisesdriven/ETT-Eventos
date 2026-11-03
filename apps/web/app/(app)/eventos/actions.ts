@@ -1,6 +1,6 @@
 "use server";
 
-import { addDays, diffDays, EVENT_MAX_DAYS, isIsoDay, limaDayStart, normalizeTag } from "@ett/core";
+import { addDays, diffDays, isIsoDay, limaDayStart, normalizeTag } from "@ett/core";
 import { enqueueSyncRun, eventTags, events, tags } from "@ett/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -34,11 +34,7 @@ const eventSchema = z
       .refine((v) => v === undefined || /^\d{1,8}(\.\d{1,2})?$/.test(v), "Monto inválido (ej. 150.00)"),
     notes: z.string().trim().max(1000).optional(),
   })
-  .refine((v) => !v.endDay || diffDays(v.startDay, v.endDay) >= 0, { path: ["endDay"], message: "La fecha de fin debe ser igual o posterior al inicio" })
-  .refine((v) => !v.endDay || diffDays(v.startDay, v.endDay) + 1 <= EVENT_MAX_DAYS, {
-    path: ["endDay"],
-    message: `El rango puede tener como máximo ${EVENT_MAX_DAYS} días`,
-  });
+  .refine((v) => !v.endDay || diffDays(v.startDay, v.endDay) >= 0, { path: ["endDay"], message: "La fecha de fin debe ser igual o posterior al inicio" });
 
 function readForm(formData: FormData) {
   return {

@@ -36,6 +36,13 @@
       "when": 1793738314259,
       "tag": "0004_evento_en_curso",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793742093484,
+      "tag": "0005_reparto_mensual",
+      "breakpoints": true
     }
   ]
 }

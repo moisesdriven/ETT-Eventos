@@ -371,3 +371,32 @@ export const webhookEvents = analytics.table(
     index("webhook_events_received_idx").on(t.receivedAt),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Reparto manual del gasto del mes entre eventos
+// ---------------------------------------------------------------------------
+
+/**
+ * % del gasto total de un mes asignado a mano a un evento (dashboard). Si no hay fila,
+ * se usa el % calculado por la atribución.
+ */
+export const eventMonthAllocations = analytics.table(
+  "event_month_allocations",
+  {
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    /** Mes en hora de Lima, AAAA-MM. */
+    month: text("month").notNull(),
+    locationId: text("location_id").notNull(),
+    pct: numeric("pct", { precision: 7, scale: 4 }).notNull(),
+    updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.month] }),
+    index("event_month_allocations_month_idx").on(t.locationId, t.month),
+    check("event_month_allocations_pct_chk", sql`${t.pct} >= 0 AND ${t.pct} <= 100`),
+    check("event_month_allocations_month_chk", sql`${t.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  ],
+);
