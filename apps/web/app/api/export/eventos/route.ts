@@ -21,7 +21,7 @@ export async function GET() {
           e.name,
           e.tags.join(" | "),
           w.from,
-          w.to,
+          w.to ?? "en curso",
           e.numeros.join(" | "),
           e.contactosEtiqueta,
           e.contactosConGasto,

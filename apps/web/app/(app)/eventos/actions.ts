@@ -1,6 +1,6 @@
 "use server";
 
-import { addDays, diffDays, EVENT_MAX_DAYS, isIsoDay, limaDayStart, normalizeTag } from "@ett/core";
+import { addDays, diffDays, isIsoDay, limaDayStart, normalizeTag } from "@ett/core";
 import { enqueueSyncRun, eventTags, events, tags } from "@ett/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -20,7 +20,12 @@ const eventSchema = z
     name: z.string().trim().min(2, "Ingresa un nombre").max(120),
     tags: z.array(z.string().trim().min(1).max(200)).min(1, "Selecciona al menos una etiqueta").max(20),
     startDay: day,
-    endDay: day,
+    /** Vacío = evento en curso; se completa cuando la campaña termina. */
+    endDay: z
+      .string()
+      .optional()
+      .transform((v) => (v?.trim() ? v.trim() : undefined))
+      .refine((v) => v === undefined || isIsoDay(v), "Fecha inválida"),
     budgetUsd: z
       .string()
       .trim()
@@ -29,18 +34,14 @@ const eventSchema = z
       .refine((v) => v === undefined || /^\d{1,8}(\.\d{1,2})?$/.test(v), "Monto inválido (ej. 150.00)"),
     notes: z.string().trim().max(1000).optional(),
   })
-  .refine((v) => diffDays(v.startDay, v.endDay) >= 0, { path: ["endDay"], message: "La fecha de fin debe ser igual o posterior al inicio" })
-  .refine((v) => diffDays(v.startDay, v.endDay) + 1 <= EVENT_MAX_DAYS, {
-    path: ["endDay"],
-    message: `El rango puede tener como máximo ${EVENT_MAX_DAYS} días`,
-  });
+  .refine((v) => !v.endDay || diffDays(v.startDay, v.endDay) >= 0, { path: ["endDay"], message: "La fecha de fin debe ser igual o posterior al inicio" });
 
 function readForm(formData: FormData) {
   return {
     name: formData.get("name"),
     tags: formData.getAll("tags").map(String),
     startDay: formData.get("startDay"),
-    endDay: formData.get("endDay"),
+    endDay: formData.get("endDay") ?? undefined,
     budgetUsd: formData.get("budgetUsd") ?? undefined,
     notes: formData.get("notes") ?? undefined,
   };
@@ -77,14 +78,15 @@ async function validateTags(locationId: string, names: string[], exceptEventId?:
   return null;
 }
 
-function windowOf(startDay: string, endDay: string) {
-  return { startsAt: limaDayStart(startDay), endsAt: limaDayStart(addDays(endDay, 1)) };
+function windowOf(startDay: string, endDay: string | undefined) {
+  return { startsAt: limaDayStart(startDay), endsAt: endDay ? limaDayStart(addDays(endDay, 1)) : null };
 }
 
 /** Encola el recálculo del evento sobre la unión de sus ventanas (antigua y nueva). */
-async function enqueueEventCalc(eventId: string, locationId: string, userId: string, ranges: { startsAt: Date; endsAt: Date }[]) {
+async function enqueueEventCalc(eventId: string, locationId: string, userId: string, ranges: { startsAt: Date; endsAt: Date | null }[]) {
   const from = new Date(Math.min(...ranges.map((r) => r.startsAt.getTime())));
-  const to = new Date(Math.max(...ranges.map((r) => r.endsAt.getTime())));
+  // Un evento en curso se calcula hasta hoy; después lo mantiene al día la sincronización periódica.
+  const to = new Date(Math.max(...ranges.map((r) => (r.endsAt ?? new Date()).getTime())));
   await enqueueSyncRun(db, { kind: "evento", locationId, rangeFrom: from, rangeTo: to, params: { eventId }, requestedBy: userId });
 }
 
@@ -163,7 +165,7 @@ export async function deleteEventAction(formData: FormData) {
   const [ev] = await db.delete(events).where(and(eq(events.id, eventId), eq(events.locationId, location.id))).returning();
   if (ev) {
     // Los cobros que compartía con otros eventos se reparten de nuevo entre los que quedan.
-    await enqueueSyncRun(db, { kind: "evento", locationId: location.id, rangeFrom: ev.startsAt, rangeTo: ev.endsAt, params: { eventId: null }, requestedBy: user.id });
+    await enqueueSyncRun(db, { kind: "evento", locationId: location.id, rangeFrom: ev.startsAt, rangeTo: ev.endsAt ?? new Date(), params: { eventId: null }, requestedBy: user.id });
     await audit({ userId: user.id, action: "evento.eliminar", entity: "event", entityId: eventId, metadata: { nombre: ev.name } });
   }
   revalidatePath("/eventos");

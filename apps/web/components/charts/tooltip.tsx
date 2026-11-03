@@ -1,7 +1,7 @@
 import { SERIES, fmt, type CategoryValues, type SeriesKey } from "./series";
 
 /** Tooltip con todas las series del punto, el total y la cantidad de mensajes. */
-export function CategoryTooltip({ title, values, keys }: { title: string; values: CategoryValues; keys: readonly SeriesKey[] }) {
+export function CategoryTooltip({ title, values, keys, note }: { title: string; values: CategoryValues; keys: readonly SeriesKey[]; note?: string }) {
   const series = SERIES.filter((s) => keys.includes(s.key));
   const total = series.reduce((acc, s) => acc + values[s.key].usd, 0);
   const n = series.reduce((acc, s) => acc + values[s.key].n, 0);
@@ -20,6 +20,7 @@ export function CategoryTooltip({ title, values, keys }: { title: string; values
       <div className="mt-1.5 flex border-t pt-1.5 font-medium text-foreground">
         Total <span className="ml-auto tabular-nums">{fmt.usd(total)} · {fmt.int(n)} msj.</span>
       </div>
+      {note ? <div className="mt-1 text-muted-foreground">{note}</div> : null}
     </div>
   );
 }

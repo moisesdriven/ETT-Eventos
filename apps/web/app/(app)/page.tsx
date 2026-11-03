@@ -9,6 +9,8 @@ import { Stat } from "@/components/stat";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
+import { AllocationTable } from "@/components/allocation/allocation-table";
+import { getMonthAllocation, singleMonth } from "@/lib/allocations";
 import { getByPhone, getFilterOptions, getKpis, getTimeSeries, getTopEvents } from "@/lib/analytics";
 import { can } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
@@ -38,6 +40,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     getFilterOptions(location.id),
   ]);
   const canExport = can(user.role, "datos.exportar");
+  const mesUnico = singleMonth(f);
+  const reparto = mesUnico ? await getMonthAllocation(location.id, mesUnico) : null;
+  const [ry, rm] = (mesUnico ?? "2000-01").split("-").map(Number) as [number, number];
+  const mesLabel = new Intl.DateTimeFormat("es-PE", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(ry, rm - 1, 1)));
   const query = filtersToQuery(f);
   const eventName = f.event === "organico" ? "Orgánico / Sin campaña" : options.events.find((e) => e.id === f.event)?.name;
 
@@ -127,6 +133,33 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Gasto por evento del mes{mesUnico ? ` · ${mesLabel}` : ""}</CardTitle>
+          <CardDescription>
+            Total de cada evento en el mes y el % que representa del gasto total. El % calculado viene como ejemplo: puedes escribir otro reparto y
+            guardarlo; el monto se calcula sobre el total del mes (todos los números y categorías).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!reparto ? (
+            <p className="text-sm text-muted-foreground">Elige un periodo de un solo mes (por ejemplo «Este mes» o «Mes y año») para ver y editar el reparto.</p>
+          ) : reparto.rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Ningún evento tuvo gasto en {mesLabel}.</p>
+          ) : (
+            <AllocationTable
+              key={mesUnico}
+              month={mesUnico!}
+              monthLabel={mesLabel}
+              monthTotal={reparto.total}
+              organicUsd={reparto.organicUsd}
+              rows={reparto.rows}
+              canEdit={can(user.role, "eventos.editar")}
+            />
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
@@ -139,7 +172,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </CardHeader>
           <CardContent>
             {phones.length ? (
-              <HBarChart data={phones.map((p) => ({ ...p, name: p.label ?? p.phone }))} keys={f.categories} />
+              <HBarChart data={phones.map((p) => ({ ...p, name: p.label ?? p.phone }))} keys={f.categories} total={kpis.totalUsd} />
             ) : (
               <p className="text-sm text-muted-foreground">Sin datos en el periodo.</p>
             )}
@@ -150,11 +183,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <CardTitle>Top 10 eventos por gasto</CardTitle>
             <CardDescription>
               Orgánico / Sin campaña en el periodo: <strong className="text-foreground">{formatUsd(events.organico.totalUsd)}</strong>
+              {events.total > 0 ? ` (${formatPercent(events.organico.totalUsd / events.total)})` : ""}. Los % son sobre el gasto total del periodo
+              ({formatUsd(events.total)}); un cobro compartido por dos eventos se reparte, así que nada se cuenta dos veces.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {events.top.length ? (
-              <HBarChart data={events.top} keys={f.categories} />
+              <HBarChart data={events.top} keys={f.categories} total={events.total} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Ningún evento con gasto en el periodo. <Link href="/eventos" className="text-primary hover:underline">Marca etiquetas como evento</Link>.

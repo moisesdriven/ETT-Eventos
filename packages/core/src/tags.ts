@@ -2,8 +2,6 @@ import { addDays, diffDays, isIsoDay, type IsoDay } from "./time";
 
 /** Duración propuesta al marcar un evento: 14 días desde la fecha de la etiqueta, incluido el seguimiento. */
 export const EVENT_DEFAULT_DAYS = 14;
-/** Duración máxima que se puede configurar (convocatoria previa + evento + seguimiento). */
-export const EVENT_MAX_DAYS = 90;
 
 export interface ParsedEventTag {
   /** Fecha de inicio leída del sufijo `dd.mm.aa`. */
@@ -53,7 +51,7 @@ export function suggestActiveRange(
   days: readonly { day: IsoDay; weight: number }[],
   options: { anchor?: IsoDay | null; gapDays?: number; coverage?: number; maxDays?: number } = {},
 ): { from: IsoDay; to: IsoDay } | null {
-  const { anchor = null, gapDays = 7, coverage = 0.9, maxDays = EVENT_MAX_DAYS } = options;
+  const { anchor = null, gapDays = 7, coverage = 0.9, maxDays = Number.POSITIVE_INFINITY } = options;
   const w = days.map((d) => Math.max(0, d.weight));
   if (!w.some((x) => x > 0)) return null;
 

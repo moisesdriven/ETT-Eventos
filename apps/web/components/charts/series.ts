@@ -13,7 +13,10 @@ const usdAxis = new Intl.NumberFormat("en-US", { style: "currency", currency: "U
 const int = new Intl.NumberFormat("es-PE");
 const intAxis = new Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 });
 
+const pct = new Intl.NumberFormat("es-PE", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 export const fmt = {
+  pct: (ratio: number) => pct.format(Number.isFinite(ratio) ? ratio : 0),
   usd: (v: number) => usd2.format(v),
   usdAxis: (v: number) => usdAxis.format(v),
   int: (v: number) => int.format(v),

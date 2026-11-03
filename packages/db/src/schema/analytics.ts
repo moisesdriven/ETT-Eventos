@@ -113,9 +113,9 @@ export const events = analytics.table(
       .notNull()
       .references(() => locations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    /** Ventana semiabierta [startsAt, endsAt) en UTC; se captura en días de Lima. */
+    /** Ventana semiabierta [startsAt, endsAt) en UTC; se captura en días de Lima. Sin fin = «en curso». */
     startsAt: ts("starts_at").notNull(),
-    endsAt: ts("ends_at").notNull(),
+    endsAt: ts("ends_at"),
     budgetUsd: usd("budget_usd"),
     notes: text("notes"),
     status: eventStatus("status").notNull().default("activo"),
@@ -125,7 +125,7 @@ export const events = analytics.table(
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
   (t) => [
-    check("events_window_chk", sql`${t.endsAt} > ${t.startsAt}`),
+    check("events_window_chk", sql`${t.endsAt} IS NULL OR ${t.endsAt} > ${t.startsAt}`),
     index("events_location_window_idx").on(t.locationId, t.startsAt, t.endsAt),
   ],
 );
@@ -369,5 +369,34 @@ export const webhookEvents = analytics.table(
   (t) => [
     index("webhook_events_pending_idx").on(t.id).where(sql`${t.processedAt} IS NULL`),
     index("webhook_events_received_idx").on(t.receivedAt),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Reparto manual del gasto del mes entre eventos
+// ---------------------------------------------------------------------------
+
+/**
+ * % del gasto total de un mes asignado a mano a un evento (dashboard). Si no hay fila,
+ * se usa el % calculado por la atribución.
+ */
+export const eventMonthAllocations = analytics.table(
+  "event_month_allocations",
+  {
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    /** Mes en hora de Lima, AAAA-MM. */
+    month: text("month").notNull(),
+    locationId: text("location_id").notNull(),
+    pct: numeric("pct", { precision: 7, scale: 4 }).notNull(),
+    updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.month] }),
+    index("event_month_allocations_month_idx").on(t.locationId, t.month),
+    check("event_month_allocations_pct_chk", sql`${t.pct} >= 0 AND ${t.pct} <= 100`),
+    check("event_month_allocations_month_chk", sql`${t.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
   ],
 );

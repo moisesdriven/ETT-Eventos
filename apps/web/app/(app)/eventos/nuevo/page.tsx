@@ -1,4 +1,4 @@
-import { addDays, defaultEventWindow, diffDays, EVENT_DEFAULT_DAYS, EVENT_MAX_DAYS, isIsoDay, parseEventTag, toLimaDay } from "@ett/core";
+import { diffDays, EVENT_DEFAULT_DAYS, isIsoDay, parseEventTag, toLimaDay } from "@ett/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,10 +21,10 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
   const preselected = options.find((o) => o.name === tag?.toLowerCase() && !o.takenBy)?.name;
   const parsed = preselected ? parseEventTag(preselected) : null;
 
-  // Fechas: las elegidas con «Usar este rango», o 14 días desde la fecha de la etiqueta.
+  // Fechas: las elegidas con «Usar este rango»; si no, inicio = fecha de la etiqueta y sin fin (en curso).
   const custom = desde && hasta && isIsoDay(desde) && isIsoDay(hasta) && diffDays(desde, hasta) >= 0;
   const startDay = custom ? desde : (parsed?.startDay ?? toLimaDay(new Date()));
-  const endDay = custom ? hasta : addDays(defaultEventWindow(startDay).endDayExclusive, -1);
+  const endDay = custom ? hasta : "";
   const activity = preselected ? await getTagActivity(location.id, [preselected], parsed?.startDay ?? null) : null;
   const base = `/eventos/nuevo?tag=${encodeURIComponent(preselected ?? "")}`;
 
@@ -40,7 +40,7 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
         </p>
       </div>
 
-      {activity ? <TagActivityCard activity={activity} applyHref={(f, t) => `${base}&desde=${f}&hasta=${t}`} current={{ from: startDay, to: endDay }} /> : null}
+      {activity ? <TagActivityCard activity={activity} applyHref={(f, t) => `${base}&desde=${f}&hasta=${t}`} current={{ from: startDay, to: endDay || null }} /> : null}
 
       <Card>
         <CardHeader>
@@ -49,8 +49,8 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
             {custom
               ? "Fechas tomadas del rango elegido. Puedes ajustarlas."
               : parsed
-                ? `Propuesta: ${EVENT_DEFAULT_DAYS} días desde la fecha de la etiqueta (${preselected}). Ajusta el rango a cuando realmente estuvo activo.`
-                : `Elige el rango en que estuvo activo (máximo ${EVENT_MAX_DAYS} días).`}
+                ? `El inicio se tomó de la etiqueta (${preselected}). Deja la fecha de fin vacía si la campaña sigue activa, o usa el rango sugerido si ya terminó (referencia: ${EVENT_DEFAULT_DAYS} días con seguimiento).`
+                : "Elige desde cuándo estuvo activo; la fecha de fin es opcional."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,7 +58,6 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
             key={`${startDay}-${endDay}`}
             action={createEventAction}
             tagOptions={options}
-            maxDays={EVENT_MAX_DAYS}
             submitLabel="Guardar y calcular gasto"
             defaults={{ name: "", tags: preselected ? [preselected] : [], startDay, endDay, budgetUsd: "", notes: "" }}
           />

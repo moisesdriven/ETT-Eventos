@@ -10,7 +10,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getEnv } from "@/lib/env";
-import { formatDay, windowDays } from "@/lib/dates";
+import { formatDay, formatWindow } from "@/lib/dates";
 import { getLocation } from "@/lib/location";
 import { formatDateTimeLima } from "@/lib/utils";
 import { enqueueSimpleAction } from "./actions";
@@ -210,7 +210,7 @@ export default async function SyncPage() {
             <tbody>
               {runs.map((r) => {
                 const status = STATUS[r.status] ?? STATUS.en_cola!;
-                const range = r.rangeFrom && r.rangeTo ? windowDays(r.rangeFrom, r.rangeTo) : null;
+                const range = r.rangeFrom && r.rangeTo ? formatWindow(r.rangeFrom, r.rangeTo) : null;
                 const secs = r.startedAt && r.finishedAt ? Math.round((r.finishedAt.getTime() - r.startedAt.getTime()) / 1000) : null;
                 return (
                   <tr key={r.id}>
@@ -222,7 +222,7 @@ export default async function SyncPage() {
                     <Td>
                       <Badge tone={status.tone}>{status.label}</Badge>
                     </Td>
-                    <Td className="whitespace-nowrap">{range ? `${formatDay(range.from)} – ${formatDay(range.to)}` : "—"}</Td>
+                    <Td className="whitespace-nowrap">{range ?? "—"}</Td>
                     <Td className="whitespace-nowrap">{formatDateTimeLima(r.createdAt)}</Td>
                     <Td className="tabular-nums">{secs !== null ? `${secs} s` : "—"}</Td>
                     <Td className="max-w-md text-xs">{r.error ? <span className="text-destructive">{r.error}</span> : summarize(r.stats)}</Td>

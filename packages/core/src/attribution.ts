@@ -2,7 +2,7 @@
  * Atribución de cobros a eventos (etiquetas marcadas como evento).
  *
  * Un cobro es elegible para un evento si:
- *  1. ocurrió dentro de la ventana [startsAt, endsAt) del evento, y
+ *  1. ocurrió dentro de la ventana [startsAt, endsAt) del evento (sin fin = en curso), y
  *  2. el contacto tenía alguna de sus etiquetas en ese momento.
  *
  * GHL no informa cuándo se aplicó una etiqueta, así que (2) se decide con la
@@ -21,7 +21,8 @@ export type AttributionBasis = "historial_etiqueta" | "ventana";
 export interface EventWindow {
   id: string;
   startsAt: Date;
-  endsAt: Date;
+  /** null = evento en curso (sin fecha de fin). */
+  endsAt: Date | null;
   /** Etiquetas normalizadas (minúsculas). */
   tags: string[];
 }
@@ -87,7 +88,7 @@ export function attributeCharge(
   const eligible: { event: EventWindow; basis: AttributionBasis }[] = [];
 
   for (const event of events) {
-    if (t < event.startsAt.getTime() || t >= event.endsAt.getTime()) continue;
+    if (t < event.startsAt.getTime() || (event.endsAt && t >= event.endsAt.getTime())) continue;
     let best: TagStatus = { eligible: false };
     for (const tag of event.tags) {
       const status = tagStatusAt(tag, charge.settledAt, currentTags, history);

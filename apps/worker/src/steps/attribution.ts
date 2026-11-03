@@ -1,6 +1,6 @@
 import { attributeCharge, type AttributionRow, type EventWindow, type TagEvidence } from "@ett/core";
 import { chargeAttributions, contactsCache, contactTagHistory, eventTags, events, messageCharges } from "@ett/db";
-import { and, eq, gt, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import type { Ctx } from "../context";
 import { tsParam } from "../sql";
 
@@ -13,7 +13,7 @@ export async function recalculateAttributions(ctx: Ctx, from: Date, to: Date) {
     .select({ id: events.id, startsAt: events.startsAt, endsAt: events.endsAt, tag: eventTags.tagNameNormalized })
     .from(events)
     .innerJoin(eventTags, eq(eventTags.eventId, events.id))
-    .where(and(eq(events.locationId, ctx.locationId), eq(events.status, "activo"), lt(events.startsAt, to), gt(events.endsAt, from)));
+    .where(and(eq(events.locationId, ctx.locationId), eq(events.status, "activo"), lt(events.startsAt, to), or(isNull(events.endsAt), gt(events.endsAt, from))));
 
   const byId = new Map<string, EventWindow>();
   for (const r of evRows) {
