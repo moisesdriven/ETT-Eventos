@@ -100,8 +100,11 @@ async function saveMessages(ctx: Ctx, page: GhlMessage[], knownPhones: Map<strin
     };
   });
 
-  for (let i = 0; i < rows.length; i += 500) {
-    const chunk = rows.slice(i, i + 500);
+  // GHL a veces repite un mensaje en la misma respuesta: se deja una sola fila por id
+  // (ON CONFLICT no admite actualizar dos veces la misma fila en una inserción).
+  const unicos = [...new Map(rows.map((r) => [r.messageId, r])).values()];
+  for (let i = 0; i < unicos.length; i += 500) {
+    const chunk = unicos.slice(i, i + 500);
     await ctx.db
       .insert(messagesCache)
       .values(chunk)
@@ -147,7 +150,7 @@ async function saveMessages(ctx: Ctx, page: GhlMessage[], knownPhones: Map<strin
         });
     }
   }
-  return rows.length;
+  return unicos.length;
 }
 
 /** Guarda en caché los mensajes de WhatsApp del rango (para cruzar cobros por wamid), día por día. */
